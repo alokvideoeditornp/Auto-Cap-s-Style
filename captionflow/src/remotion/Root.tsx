@@ -1,7 +1,7 @@
-import { Composition, registerRoot, CalculateMetadataFunction } from 'remotion';
+import { Composition, CalculateMetadataFunction } from 'remotion';
 import { CaptionComposition } from './CaptionComposition';
 
-const calculateMetadata: CalculateMetadataFunction<any> = ({ props }) => {
+const calculateMetadata: CalculateMetadataFunction<unknown> = ({ props }: { props: any }) => {
   let duration = 300;
   if (props.captions && props.captions.length > 0) {
     const maxMs = props.captions[props.captions.length - 1].endTime;
@@ -27,7 +27,7 @@ export const RemotionRoot: React.FC = () => {
     <>
       <Composition
         id="CaptionComposition"
-        component={CaptionComposition as React.FC<any>}
+        component={CaptionComposition as React.FC<unknown>}
         durationInFrames={300}
         calculateMetadata={calculateMetadata}
         fps={30}

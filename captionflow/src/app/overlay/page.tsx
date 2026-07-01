@@ -23,7 +23,7 @@ function OverlayContent() {
 
   useEffect(() => {
     if (!jobId) {
-      setError('No jobId provided');
+      setTimeout(() => setError('No jobId provided'), 0);
       return;
     }
     fetch(`/renders/render-${jobId}.json`)
@@ -32,7 +32,7 @@ function OverlayContent() {
         return res.json();
       })
       .then(data => setProps(data))
-      .catch(err => setError('Failed to load graphic data. Please re-export from the editor.'));
+      .catch(() => setError('Failed to load graphic data. Please re-export from the editor.'));
   }, [jobId]);
 
   if (error) return <div style={{ color: 'white', background: 'red', padding: '20px', fontFamily: 'sans-serif' }}>{error}</div>;

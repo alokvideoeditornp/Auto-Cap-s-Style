@@ -5,7 +5,6 @@ import { Player } from '@remotion/player';
 import { useProjectStore } from '@/store/useProjectStore';
 import { CaptionComposition } from '@/remotion/CaptionComposition';
 import { parseSrt } from '@/lib/srtParser';
-import { FileUpload } from './FileUpload';
 import { StylePanel } from './StylePanel';
 import { Undo, Redo, Wand2, Repeat, RefreshCcw } from 'lucide-react';
 
@@ -116,20 +115,20 @@ export const Editor: React.FC = () => {
     setCaptions(newCaptions);
   };
 
-  const loadFromTimeline = () => {
-    fetch('/auto.srt?t=' + Date.now()) // cache bust
-      .then(res => res.text())
-      .then(text => {
-        if (text) {
-           const parsed = parseSrt(text);
-           setCaptions(parsed);
-           window.history.replaceState({}, '', window.location.pathname);
-        }
-      })
-      .catch(err => console.error(err));
-  };
-
   useEffect(() => {
+    const loadFromTimeline = () => {
+      fetch('/auto.srt?t=' + Date.now()) // cache bust
+        .then(res => res.text())
+        .then(text => {
+          if (text) {
+             const parsed = parseSrt(text);
+             setCaptions(parsed);
+             window.history.replaceState({}, '', window.location.pathname);
+          }
+        })
+        .catch(err => console.error(err));
+    };
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('autoLoad') === 'true') {
       loadFromTimeline();
@@ -166,7 +165,7 @@ export const Editor: React.FC = () => {
   const [confirmAction, setConfirmAction] = useState<{type: 'reload' | 'auto', open: boolean}>({ type: 'reload', open: false });
 
   useEffect(() => {
-    setIsClient(true);
+    setTimeout(() => setIsClient(true), 0);
   }, []);
 
   const handleRender = async () => {

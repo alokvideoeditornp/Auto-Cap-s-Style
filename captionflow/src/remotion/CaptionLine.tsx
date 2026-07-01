@@ -80,12 +80,12 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig }
         ? segment.highlightedIndices.includes(wIdx) 
         : segment.highlightedWords.some(hw => hw.toLowerCase() === cleanWord);
       
-      let color = isHighlighted ? styleConfig.accentColor : styleConfig.baseColor;
+      const color = isHighlighted ? styleConfig.accentColor : styleConfig.baseColor;
       const fontSize = isHighlighted 
         ? `${styleConfig.fontSize * styleConfig.accentFontSizeMultiplier}px` 
         : `${styleConfig.fontSize * styleConfig.baseFontSizeMultiplier}px`;
 
-      let wordStyles: React.CSSProperties = { margin: '0 8px', display: 'flex', flexDirection: 'row' };
+      const wordStyles: React.CSSProperties = { margin: '0 8px', display: 'flex', flexDirection: 'row' };
 
       if (styleConfig.displayMode === 'letter') {
         const letters = word.split('');
@@ -212,7 +212,7 @@ const AnimatedItem: React.FC<{
   let rotate = 0;
   let opacity = 1;
   
-  let extraStyles: React.CSSProperties = {};
+  const extraStyles: React.CSSProperties = {};
   let finalColor = color;
   
   if (isHighlighted && styleConfig.highlightStyle === 'highlight') {

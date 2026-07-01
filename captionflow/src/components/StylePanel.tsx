@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useProjectStore, StyleConfig, TextAlign } from '@/store/useProjectStore';
+import { useProjectStore, StyleConfig } from '@/store/useProjectStore';
 import { PaintBucket, Type, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 const AccordionItem = ({ title, children, defaultOpen = false }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
@@ -129,7 +129,7 @@ const PRESETS: { name: string; config: Partial<StyleConfig>; preview: React.Reac
     },
     preview: (
       <span style={{ fontFamily: 'Inter', color: '#000000', fontSize: '14px', fontWeight: 900, textShadow: '2px 2px 0px #ffffff, -1px -1px 0px #ffffff, 1px -1px 0px #ffffff, -1px 1px 0px #ffffff' }}>
-        <span style={{ fontSize: '0.4em' }}>do what's </span><span style={{ color: '#ff0000', fontSize: '1.2em' }}>interesting</span><span style={{ fontSize: '0.4em', filter: 'blur(1px)' }}> to you</span>
+        <span style={{ fontSize: '0.4em' }}>do what&apos;s </span><span style={{ color: '#ff0000', fontSize: '1.2em' }}>interesting</span><span style={{ fontSize: '0.4em', filter: 'blur(1px)' }}> to you</span>
       </span>
     )
   },
