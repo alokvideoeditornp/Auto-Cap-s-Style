@@ -1,0 +1,1 @@
+# Auto-Cap-s-Style
