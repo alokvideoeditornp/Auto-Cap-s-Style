@@ -75,9 +75,10 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig }
     let itemIndex = 0; // global counter for letters if in letter mode
 
     const elements = words.map((word, wIdx) => {
-      // Simple heuristic to strip punctuation for matching highlight
-      const cleanWord = word.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-      const isHighlighted = segment.highlightedWords.some(hw => hw.toLowerCase() === cleanWord);
+      const cleanWord = word.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
+      const isHighlighted = segment.highlightedIndices 
+        ? segment.highlightedIndices.includes(wIdx) 
+        : segment.highlightedWords.some(hw => hw.toLowerCase() === cleanWord);
       
       let color = isHighlighted ? styleConfig.accentColor : styleConfig.baseColor;
       const fontSize = isHighlighted 
@@ -162,7 +163,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig }
           flexWrap: (styleConfig.wrapText ?? true) && styleConfig.lineLayout !== 'single' ? 'wrap' : 'nowrap',
           justifyContent: styleConfig.textAlign === 'left' ? 'flex-start' : styleConfig.textAlign === 'right' ? 'flex-end' : 'center',
           alignItems: 'baseline',
-          fontFamily: `"${styleConfig.font}", sans-serif`,
+          fontFamily: `"${styleConfig.font}", "Noto Sans Devanagari", "Noto Sans Arabic", "Noto Sans Bengali", "Noto Sans", sans-serif`,
           fontWeight: 800,
           textShadow: styleConfig.highlightStyle === 'subtitle' ? 'none' : '2px 4px 6px rgba(0,0,0,0.6)',
           textAlign: styleConfig.textAlign ?? 'center',

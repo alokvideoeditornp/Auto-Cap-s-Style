@@ -20,20 +20,42 @@ export const parseSrt = (srtContent: string): CaptionSegment[] => {
       if (timeMatch) {
         const text = textLines.join(' ').replace(/<[^>]+>/g, '').trim();
         
-        // Auto-detect important word (longest word or fully uppercase word)
-        const words = text.split(' ');
-        let importantWord = '';
-        
-        // Find uppercase words first (excluding I)
-        const upperWords = words.filter(w => w === w.toUpperCase() && w.length > 1 && w.match(/[A-Z]/));
-        if (upperWords.length > 0) {
-          importantWord = upperWords[0];
-        } else {
-          // Fallback to longest word
-          importantWord = words.reduce((longest, current) => current.length > longest.length ? current : longest, '');
+        // Auto-detect important word
+        const words = text.split(' ').filter(w => w.trim().length > 0);
+        let cleanImportant = '';
+        let bestIndex = -1;
+
+        if (words.length > 0) {
+          let bestWord = words[0];
+          let maxScore = -100;
+
+          words.forEach((w, index) => {
+            let score = w.length; 
+            if (index === words.length - 1) score += 3; // Punchline bonus
+            if (index === 0) score += 1; // Start word bonus
+            if (w.match(/[A-Z]/)) {
+              if (w === w.toUpperCase()) {
+                score += 5; // All caps bonus
+              } else {
+                score += 2; // Title case bonus
+              }
+            }
+            if (w.length <= 2) score -= 10; // Penalize stop words strongly
+            if (w.length >= 7) score += 2; // Reward long descriptive words
+
+            if (score > maxScore) {
+              maxScore = score;
+              bestWord = w;
+            }
+          });
+          
+          cleanImportant = bestWord.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
+          words.forEach((w, i) => {
+            if (w === bestWord && bestIndex === -1) {
+              bestIndex = i;
+            }
+          });
         }
-        
-        const cleanImportant = importantWord.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 
         segments.push({
           id,
@@ -41,6 +63,7 @@ export const parseSrt = (srtContent: string): CaptionSegment[] => {
           endTime: parseTimeToMs(timeMatch[2]),
           text,
           highlightedWords: cleanImportant ? [cleanImportant] : [],
+          highlightedIndices: bestIndex !== -1 ? [bestIndex] : []
         });
       }
     }

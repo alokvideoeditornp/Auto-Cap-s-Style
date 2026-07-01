@@ -17,37 +17,101 @@ export const Editor: React.FC = () => {
   const setIndividualStylingEnabled = useProjectStore((state) => state.setIndividualStylingEnabled);
   const setSelectedCaptionId = useProjectStore((state) => state.setSelectedCaptionId);
 
-  const toggleHighlight = (captionId: string, word: string) => {
+  const [highlightSimilar, setHighlightSimilar] = useState(false);
+
+  const toggleHighlight = (captionId: string, word: string, wordIndex: number) => {
     const caption = captions.find(c => c.id === captionId);
     if (!caption) return;
     
     // Clean punctuation for matching but store the clean version
-    const cleanWord = word.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const cleanWord = word.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
     
     let newHighlights = [...caption.highlightedWords];
-    if (newHighlights.some(w => w.toLowerCase() === cleanWord)) {
-      newHighlights = newHighlights.filter(w => w.toLowerCase() !== cleanWord);
+    let newHighlightIndices = caption.highlightedIndices ? [...caption.highlightedIndices] : [];
+    
+    if (highlightSimilar) {
+      if (newHighlights.some(w => w.toLowerCase() === cleanWord)) {
+        newHighlights = newHighlights.filter(w => w.toLowerCase() !== cleanWord);
+        // Remove all indices for this word
+        const wordsArr = caption.text.split(' ');
+        wordsArr.forEach((w, i) => {
+          if (w.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim() === cleanWord) {
+            newHighlightIndices = newHighlightIndices.filter(idx => idx !== i);
+          }
+        });
+      } else {
+        newHighlights.push(cleanWord);
+        // Add all indices for this word
+        const wordsArr = caption.text.split(' ');
+        wordsArr.forEach((w, i) => {
+          if (w.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim() === cleanWord && !newHighlightIndices.includes(i)) {
+            newHighlightIndices.push(i);
+          }
+        });
+      }
     } else {
-      newHighlights.push(cleanWord);
+      if (newHighlightIndices.includes(wordIndex)) {
+        newHighlightIndices = newHighlightIndices.filter(idx => idx !== wordIndex);
+        // Optional: remove from newHighlights if no more indices of this word exist
+        const wordsArr = caption.text.split(' ');
+        const hasMoreOfThisWord = newHighlightIndices.some(idx => wordsArr[idx].replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim() === cleanWord);
+        if (!hasMoreOfThisWord) {
+          newHighlights = newHighlights.filter(w => w.toLowerCase() !== cleanWord);
+        }
+      } else {
+        newHighlightIndices.push(wordIndex);
+        if (!newHighlights.some(w => w.toLowerCase() === cleanWord)) {
+          newHighlights.push(cleanWord);
+        }
+      }
     }
     
-    updateCaptionSegment(captionId, { highlightedWords: newHighlights });
+    updateCaptionSegment(captionId, { highlightedWords: newHighlights, highlightedIndices: newHighlightIndices });
   };
 
   const autoHighlightAll = () => {
     const newCaptions = captions.map(cap => {
-      const words = cap.text.split(' ');
-      let importantWord = '';
+      const words = cap.text.split(' ').filter(w => w.trim().length > 0);
+      if (words.length === 0) return cap;
+
+      let bestWord = words[0];
+      let maxScore = -100;
+
+      words.forEach((w, index) => {
+        let score = w.length; 
+        
+        if (index === words.length - 1) score += 3; // Punchline bonus
+        if (index === 0) score += 1; // Start word bonus
+        
+        if (w.match(/[A-Z]/)) {
+          if (w === w.toUpperCase()) {
+            score += 5; // All caps bonus
+          } else {
+            score += 2; // Title case bonus
+          }
+        }
+        
+        if (w.length <= 2) score -= 10; // Penalize stop words strongly
+        if (w.length >= 7) score += 2; // Reward long descriptive words
+
+        if (score > maxScore) {
+          maxScore = score;
+          bestWord = w;
+        }
+      });
       
-      const upperWords = words.filter(w => w === w.toUpperCase() && w.length > 1 && w.match(/[A-Z]/));
-      if (upperWords.length > 0) {
-        importantWord = upperWords[0];
-      } else {
-        importantWord = words.reduce((longest, current) => current.length > longest.length ? current : longest, '');
-      }
-      
-      const cleanImportant = importantWord.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-      return { ...cap, highlightedWords: cleanImportant ? [cleanImportant] : [] };
+      const cleanImportant = bestWord.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
+      let bestIndex = -1;
+      words.forEach((w, i) => {
+        if (w === bestWord && bestIndex === -1) {
+          bestIndex = i;
+        }
+      });
+      return { 
+        ...cap, 
+        highlightedWords: cleanImportant ? [cleanImportant] : [],
+        highlightedIndices: bestIndex !== -1 ? [bestIndex] : []
+      };
     });
     setCaptions(newCaptions);
   };
@@ -159,12 +223,19 @@ export const Editor: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-black text-white p-4 gap-6">
+    <div className="flex flex-col md:flex-row h-screen bg-black text-white p-4 gap-6 relative">
       {/* Invisible video element to grab metadata */}
       <video ref={videoRef} className="hidden" />
 
       {/* Left Sidebar: Captions, Render */}
-      <div className="w-80 bg-gray-900 border border-gray-800 overflow-y-auto flex flex-col rounded-xl">
+      <div className="w-80 bg-gray-900 border border-gray-800 flex flex-col rounded-xl relative z-10">
+        {/* Watermark */}
+        <div className="px-4 pt-5 pb-1 pointer-events-none select-none flex-shrink-0">
+          <h1 className="text-white/30 text-base font-bold tracking-[0.15em] font-sans">
+            ALOK VIDEO EDITOR
+          </h1>
+        </div>
+
         {/* Caption List */}
         <div className="flex-1 p-4 overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
@@ -204,17 +275,29 @@ export const Editor: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex justify-between items-center bg-gray-800/80 p-3 rounded-lg mb-4 border border-gray-700/50">
-            <span className="text-sm font-bold text-gray-200">Individual Styles</span>
-            <button 
-              onClick={() => {
-                setIndividualStylingEnabled(!individualStylingEnabled);
-                if (individualStylingEnabled) setSelectedCaptionId(null);
-              }}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${individualStylingEnabled ? 'bg-indigo-500' : 'bg-gray-600'}`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${individualStylingEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-            </button>
+          <div className="flex flex-col gap-2 mb-4">
+            <div className="flex justify-between items-center bg-gray-800/80 p-3 rounded-lg border border-gray-700/50">
+              <span className="text-sm font-bold text-gray-200">Individual Styles</span>
+              <button 
+                onClick={() => {
+                  setIndividualStylingEnabled(!individualStylingEnabled);
+                  if (individualStylingEnabled) setSelectedCaptionId(null);
+                }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${individualStylingEnabled ? 'bg-indigo-500' : 'bg-gray-600'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${individualStylingEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            
+            <label className="flex items-center gap-2 cursor-pointer bg-gray-800/50 p-2 rounded-lg border border-gray-700/30 w-fit">
+              <input 
+                type="checkbox"
+                checked={highlightSimilar}
+                onChange={(e) => setHighlightSimilar(e.target.checked)}
+                className="w-3 h-3 rounded accent-indigo-500 bg-gray-700 border-gray-600"
+              />
+              <span className="text-xs text-gray-400">Select similar words automatically</span>
+            </label>
           </div>
           
           <div className="space-y-2">
@@ -244,14 +327,16 @@ export const Editor: React.FC = () => {
                 </div>
                 <p className="text-sm text-gray-200 leading-relaxed flex flex-wrap gap-1 mt-2">
                   {cap.text.split(' ').map((word, i) => {
-                    const cleanWord = word.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                    const isHighlighted = cap.highlightedWords.some(w => w.toLowerCase() === cleanWord);
+                    const cleanWord = word.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
+                    const isHighlighted = cap.highlightedIndices 
+                      ? cap.highlightedIndices.includes(i)
+                      : cap.highlightedWords.some(w => w.toLowerCase() === cleanWord);
                     return (
                       <span
                         key={i}
                         onClick={(e) => {
                           e.stopPropagation(); // prevent selecting the block if clicking a word
-                          toggleHighlight(cap.id, word);
+                          toggleHighlight(cap.id, word, i);
                         }}
                         className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${
                           isHighlighted 

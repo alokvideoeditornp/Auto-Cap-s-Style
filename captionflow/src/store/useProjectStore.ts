@@ -6,6 +6,7 @@ export type CaptionSegment = {
   endTime: number; // in milliseconds
   text: string;
   highlightedWords: string[];
+  highlightedIndices?: number[]; // Added to track specific instances of words
   customStyle?: Partial<StyleConfig>;
 };
 

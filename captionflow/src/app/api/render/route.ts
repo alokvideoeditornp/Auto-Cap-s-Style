@@ -81,11 +81,11 @@ export async function POST(req: Request) {
       console.error(`[Job ${jobId}] Remotion stderr:`, data.toString());
     });
 
-    remotionProcess.on('close', (code) => {
+    remotionProcess.on('exit', (code) => {
       // Clean up temp props file
       if (fs.existsSync(propsPath)) fs.unlinkSync(propsPath);
       
-      if (code === 0) {
+      if (code === 0 || code === null) {
         console.log(`[Job ${jobId}] Render complete!`);
         jobs[jobId].progress = 100;
         jobs[jobId].status = 'done';
