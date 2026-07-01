@@ -19,6 +19,7 @@ export type HighlightStyle = 'none' | 'subtitle' | 'glow' | 'highlight' | 'under
 
 export interface StyleConfig {
   font: string;
+  fontWeight: number;
   baseColor: string;
   accentColor: string;
   backgroundColor: string;
@@ -37,6 +38,7 @@ export interface StyleConfig {
   clipText: boolean;
   textBoxWidth: number;
   textBoxHeight: number;
+  activePreset?: string;
 }
 
 interface ProjectState {
@@ -65,8 +67,9 @@ interface ProjectState {
   redo: () => void;
 }
 
-const defaultStyle: StyleConfig = {
+export const defaultStyle: StyleConfig = {
   font: 'Montserrat', // Default to Montserrat
+  fontWeight: 800,
   baseColor: '#ffffff',
   accentColor: '#FFD400', // Yellow
   backgroundColor: '#000000', // Default black background for subtitle style

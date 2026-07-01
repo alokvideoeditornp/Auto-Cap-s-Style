@@ -1,12 +1,20 @@
 1
-00:00:00,000 --> 00:00:01,700
-हाम्रो घर 
+00:00:00,266 --> 00:00:02,266
+Hi everyone today I will show you how to
 
 2
 00:00:02,300 --> 00:00:04,000
-सहर पहाड  हमल 
+create this waveform
 
 3
-00:00:04,566 --> 00:00:06,233
-हाम्रो घर  हाम्रो सहर पहाड  हमल 
+00:00:04,566 --> 00:00:05,966
+animation in present page
+
+4
+00:00:10,966 --> 00:00:11,233
+animation in present page
+
+5
+00:00:11,633 --> 00:00:13,300
+animation in present page
 

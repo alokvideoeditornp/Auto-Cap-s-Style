@@ -178,7 +178,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig }
           justifyContent: styleConfig.textAlign === 'left' ? 'flex-start' : styleConfig.textAlign === 'right' ? 'flex-end' : 'center',
           alignItems: 'baseline',
           fontFamily: `"${styleConfig.font}", "Noto Sans Devanagari", "Noto Sans Arabic", "Noto Sans Bengali", "Noto Sans", sans-serif`,
-          fontWeight: 800,
+          fontWeight: styleConfig.fontWeight ?? 800,
           textShadow: styleConfig.highlightStyle === 'subtitle' ? 'none' : '2px 4px 6px rgba(0,0,0,0.6)',
           textAlign: styleConfig.textAlign ?? 'center',
           whiteSpace: (styleConfig.wrapText ?? true) && styleConfig.lineLayout !== 'single' ? 'normal' : 'nowrap',

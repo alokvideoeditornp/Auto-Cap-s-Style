@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useProjectStore, StyleConfig } from '@/store/useProjectStore';
-import { PaintBucket, Type, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { useProjectStore, StyleConfig, defaultStyle } from '@/store/useProjectStore';
+import { PaintBucket, Type, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight, Check } from 'lucide-react';
 
 const AccordionItem = ({ title, children, defaultOpen = false }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
-    <div className="border border-gray-700 rounded-lg overflow-hidden mb-2 bg-gray-900/50">
+    <div className="border border-gray-700 rounded-lg mb-2 bg-gray-900/50">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-750 transition-colors"
+        className={`w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-750 transition-colors ${isOpen ? 'rounded-t-lg' : 'rounded-lg'}`}
       >
         <span className="font-semibold text-gray-200 text-sm">{title}</span>
         {isOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
       </button>
       {isOpen && (
-        <div className="p-4 border-t border-gray-700 bg-gray-900/30 flex flex-col gap-5">
+        <div className="p-4 border-t border-gray-700 bg-gray-900/30 flex flex-col gap-5 rounded-b-lg">
           {children}
         </div>
       )}
@@ -212,7 +212,12 @@ const PRESETS: { name: string; config: Partial<StyleConfig>; preview: React.Reac
   }
 ];
 
-const CustomFontPicker = ({ fonts, value, onChange, isLoading }: { fonts: string[], value: string, onChange: (v: string) => void, isLoading: boolean }) => {
+export interface FontGroup {
+  family: string;
+  weights: { label: string; value: number; fullName: string }[];
+}
+
+const CustomFontPicker = ({ fonts, value, onChange, isLoading }: { fonts: FontGroup[], value: string, onChange: (v: string) => void, isLoading: boolean }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   
@@ -224,10 +229,7 @@ const CustomFontPicker = ({ fonts, value, onChange, isLoading }: { fonts: string
     return () => document.removeEventListener('click', handleClick);
   }, [isOpen]);
 
-  const defaultFonts = ["Montserrat", "Inter", "Oswald", "Bebas Neue", "Anton", "Poppins", "Roboto", "Rubik", "Lato", "Open Sans", "Nunito", "Raleway", "Playfair Display", "Impact", "Comic Sans MS", "Courier New", "Trebuchet MS"];
-
-  const filteredSystem = fonts.filter(f => f.toLowerCase().includes(search.toLowerCase()));
-  const filteredDefault = defaultFonts.filter(f => f.toLowerCase().includes(search.toLowerCase()));
+  const filteredFonts = fonts.filter(f => f.family.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="relative" onClick={(e) => e.stopPropagation()}>
@@ -253,39 +255,21 @@ const CustomFontPicker = ({ fonts, value, onChange, isLoading }: { fonts: string
           <div className="overflow-y-auto flex-1">
             {isLoading && <div className="p-4 text-xs text-gray-400 text-center">Loading Fonts...</div>}
             
-            {filteredSystem.length > 0 && (
-              <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-800/80 sticky top-0 backdrop-blur-sm">
-                System Fonts
-              </div>
-            )}
-            {filteredSystem.map(f => (
-              <button
-                key={f}
-                onClick={() => { onChange(f); setIsOpen(false); }}
-                className={`w-full text-left px-4 py-1.5 text-sm hover:bg-indigo-600 transition truncate ${value === f ? 'bg-indigo-600 text-white' : 'text-gray-200'}`}
-                style={{ fontFamily: f }}
-              >
-                {f}
-              </button>
-            ))}
-            
-            {filteredDefault.length > 0 && (
-              <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-800/80 sticky top-0 backdrop-blur-sm">
-                Default Fonts
-              </div>
-            )}
-            {filteredDefault.map(f => (
-              <button
-                key={f}
-                onClick={() => { onChange(f); setIsOpen(false); }}
-                className={`w-full text-left px-4 py-1.5 text-sm hover:bg-indigo-600 transition truncate ${value === f ? 'bg-indigo-600 text-white' : 'text-gray-200'}`}
-                style={{ fontFamily: f }}
-              >
-                {f}
-              </button>
+            {filteredFonts.map((font) => (
+                <button
+                  key={font.family}
+                  onClick={() => {
+                    onChange(font.family);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 hover:bg-indigo-600/20 flex items-center justify-between border-b border-gray-700/50 last:border-b-0 transition-colors ${value === font.family ? 'bg-indigo-600/30 text-white' : 'text-gray-300'}`}
+                >
+                  <span style={{ fontFamily: `"${font.family}", sans-serif`, fontSize: '16px' }}>{font.family}</span>
+                  {value === font.family && <Check className="w-4 h-4 text-indigo-400" />}
+                </button>
             ))}
 
-            {!isLoading && filteredSystem.length === 0 && filteredDefault.length === 0 && (
+            {!isLoading && filteredFonts.length === 0 && (
               <div className="p-4 text-xs text-gray-400 text-center">No fonts found</div>
             )}
           </div>
@@ -302,6 +286,7 @@ export const StylePanel = () => {
     individualStylingEnabled, 
     selectedCaptionId, 
     captions, 
+    setCaptions,
     updateCaptionSegment 
   } = useProjectStore();
 
@@ -313,26 +298,23 @@ export const StylePanel = () => {
     ? { ...globalStyleConfig, ...(selectedCaption!.customStyle || {}) }
     : globalStyleConfig;
 
-  const [systemFonts, setSystemFonts] = useState<string[]>([]);
-  const [isLoadingFonts, setIsLoadingFonts] = useState(true);
+  const [systemFonts, setSystemFonts] = useState<FontGroup[]>([]);
+  const [isLoadingFonts, setIsLoadingFonts] = useState(false);
 
   useEffect(() => {
-    const fetchFonts = async () => {
-      try {
-        const res = await fetch('/api/fonts');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.fonts && data.fonts.length > 0) {
-            setSystemFonts(data.fonts);
-          }
+    setIsLoadingFonts(true);
+    fetch('/api/fonts')
+      .then(res => res.json())
+      .then(data => {
+        if (data.fontsGrouped) {
+          setSystemFonts(data.fontsGrouped);
         }
-      } catch (err) {
-        console.error('Failed to auto-load system fonts:', err);
-      } finally {
         setIsLoadingFonts(false);
-      }
-    };
-    fetchFonts();
+      })
+      .catch(err => {
+        console.error('Failed to auto-load system fonts:', err);
+        setIsLoadingFonts(false);
+      });
   }, []);
 
   const handleUpdate = (updates: Partial<StyleConfig>) => {
@@ -341,16 +323,47 @@ export const StylePanel = () => {
         customStyle: { ...(selectedCaption!.customStyle || {}), ...updates } 
       });
     } else {
+      // If a setting is manually changed, detach from the active preset
+      if (!('activePreset' in updates)) {
+        updates.activePreset = undefined;
+      }
       setStyleConfig(updates);
     }
   };
 
   return (
     <div className="bg-gray-800 rounded-xl p-6 shadow-xl border border-gray-700/50 flex flex-col">
-      <h3 className="text-xl font-bold flex items-center gap-2 mb-4">
-        <PaintBucket className="w-5 h-5 text-indigo-400" />
-        Design & Animations
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xl font-bold flex items-center gap-2">
+          <PaintBucket className="w-5 h-5 text-indigo-400" />
+          Design & Animations
+        </h3>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => {
+              if (confirm("Reset global styles to default?")) {
+                setStyleConfig(defaultStyle);
+              }
+            }} 
+            className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-200 transition"
+            title="Reset global styles to default"
+          >
+            Reset
+          </button>
+          <button 
+            onClick={() => {
+              if (confirm("Reset ALL styles to default AND clear all individual caption edits?")) {
+                setStyleConfig(defaultStyle);
+                setCaptions(captions.map(c => ({ ...c, customStyle: undefined })));
+              }
+            }} 
+            className="text-xs px-2 py-1 bg-red-900/40 hover:bg-red-800 text-red-200 border border-red-800/50 rounded transition"
+            title="Force reset global styles and clear all individual caption styles"
+          >
+            Force Reset
+          </button>
+        </div>
+      </div>
 
       {isEditingIndividual ? (
         <div className="bg-indigo-600/20 border border-indigo-500/50 text-indigo-200 px-3 py-2 rounded-lg text-xs font-semibold mb-4 flex items-center justify-between">
@@ -401,11 +414,16 @@ export const StylePanel = () => {
                   displayMode: 'line' as const,
                   highlightStyle: 'none' as const,
                   glowIntensity: 3,
+                  activePreset: preset.name,
                   ...preset.config
                 };
                 handleUpdate(baseReset);
               }}
-              className="relative h-16 bg-gray-900 border border-gray-700 rounded-lg overflow-hidden group hover:border-indigo-500 transition"
+              className={`relative h-16 bg-gray-900 border rounded-lg overflow-hidden group transition ${
+                styleConfig.activePreset === preset.name 
+                  ? 'border-indigo-500 ring-2 ring-indigo-500' 
+                  : 'border-gray-700 hover:border-indigo-500'
+              }`}
             >
               <div className="absolute inset-0 flex items-center justify-center bg-gray-800 group-hover:bg-gray-750 transition pb-4 pointer-events-none">
                 {preset.preview}
@@ -431,9 +449,41 @@ export const StylePanel = () => {
           <CustomFontPicker 
             fonts={systemFonts}
             value={styleConfig.font}
-            onChange={(v) => handleUpdate({ font: v })}
+            onChange={(v) => {
+               // When font changes, try to find a matching weight or fallback to 400 or the first one
+               const fontGroup = systemFonts.find(f => f.family === v);
+               let newWeight = styleConfig.fontWeight;
+               if (fontGroup && fontGroup.weights.length > 0) {
+                 if (!fontGroup.weights.find(w => w.value === newWeight)) {
+                   // Preferred fallback sequence: 400 -> first available
+                   newWeight = fontGroup.weights.find(w => w.value === 400)?.value || fontGroup.weights[0].value;
+                 }
+               }
+               handleUpdate({ font: v, fontWeight: newWeight });
+            }}
             isLoading={isLoadingFonts}
           />
+          {(() => {
+            const currentFont = systemFonts.find(f => f.family === styleConfig.font);
+            const availableWeights = currentFont ? currentFont.weights : [];
+            
+            if (availableWeights.length > 0) {
+              return (
+                <div className="mt-2">
+                  <select
+                    value={styleConfig.fontWeight || 800}
+                    onChange={(e) => handleUpdate({ fontWeight: parseInt(e.target.value, 10) })}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-200"
+                  >
+                    {availableWeights.map(w => (
+                      <option key={w.value} value={w.value}>{w.label} ({w.value})</option>
+                    ))}
+                  </select>
+                </div>
+              );
+            }
+            return null;
+          })()}
         </div>
 
         <div className="flex flex-col gap-2 mt-2">

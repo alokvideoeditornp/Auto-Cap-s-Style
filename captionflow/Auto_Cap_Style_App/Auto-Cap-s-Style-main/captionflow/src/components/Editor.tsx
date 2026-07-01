@@ -6,7 +6,7 @@ import { useProjectStore } from '@/store/useProjectStore';
 import { CaptionComposition } from '@/remotion/CaptionComposition';
 import { parseSrt } from '@/lib/srtParser';
 import { StylePanel } from './StylePanel';
-import { Undo, Redo, Wand2, Repeat, RefreshCcw } from 'lucide-react';
+import { Undo, Redo, Wand2, Repeat, RefreshCcw, Edit2, Check, X } from 'lucide-react';
 
 export const Editor: React.FC = () => {
   const { videoUrl, captions, styleConfig, fps, videoDuration, undo, redo, pastCaptions, futureCaptions, individualStylingEnabled, selectedCaptionId } = useProjectStore();
@@ -17,6 +17,8 @@ export const Editor: React.FC = () => {
   const setSelectedCaptionId = useProjectStore((state) => state.setSelectedCaptionId);
 
   const [highlightSimilar, setHighlightSimilar] = useState(false);
+  const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
+  const [editingCaptionText, setEditingCaptionText] = useState('');
 
   const toggleHighlight = (captionId: string, word: string, wordIndex: number) => {
     const caption = captions.find(c => c.id === captionId);
@@ -222,12 +224,12 @@ export const Editor: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-black text-white p-4 gap-6 relative">
+    <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen lg:overflow-hidden overflow-y-auto bg-black text-white p-4 gap-6 relative">
       {/* Invisible video element to grab metadata */}
       <video ref={videoRef} className="hidden" />
 
       {/* Left Sidebar: Captions, Render */}
-      <div className="w-80 bg-gray-900 border border-gray-800 flex flex-col rounded-xl relative z-10">
+      <div className="w-full lg:w-80 flex-shrink-0 bg-gray-900 border border-gray-800 flex flex-col rounded-xl relative z-10 lg:h-full max-h-[60vh] lg:max-h-full">
         {/* Watermark */}
         <div className="px-4 pt-5 pb-1 pointer-events-none select-none flex-shrink-0">
           <h1 className="text-white/30 text-base font-bold tracking-[0.15em] font-sans">
@@ -317,15 +319,58 @@ export const Editor: React.FC = () => {
                 }`}
               >
                 <div className="flex justify-between items-center mb-1">
-                  <div className="text-xs text-indigo-400 font-mono">
+                  <div className="text-xs text-indigo-400 font-mono flex items-center gap-2">
                     {cap.startTime}ms - {cap.endTime}ms
+                    {editingCaptionId !== cap.id && (
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setEditingCaptionId(cap.id); 
+                          setEditingCaptionText(cap.text); 
+                        }}
+                        className="text-gray-500 hover:text-white transition-colors"
+                        title="Edit text"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                   {hasCustomStyle && (
                     <span className="text-[10px] bg-indigo-600 px-1.5 py-0.5 rounded text-white font-bold">STYLED</span>
                   )}
                 </div>
-                <p className="text-sm text-gray-200 leading-relaxed flex flex-wrap gap-1 mt-2">
-                  {cap.text.split(' ').map((word, i) => {
+                
+                {editingCaptionId === cap.id ? (
+                  <div className="mt-2 flex flex-col gap-2">
+                    <textarea 
+                      value={editingCaptionText}
+                      onChange={(e) => setEditingCaptionText(e.target.value)}
+                      className="w-full bg-gray-900 text-white text-sm p-2 rounded border border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+                      rows={2}
+                      autoFocus
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setEditingCaptionId(null); }}
+                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 flex items-center gap-1 text-xs rounded text-white"
+                      >
+                        <X className="w-3 h-3" /> Cancel
+                      </button>
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          updateCaptionSegment(cap.id, { text: editingCaptionText });
+                          setEditingCaptionId(null); 
+                        }}
+                        className="px-2 py-1 bg-green-600 hover:bg-green-500 flex items-center gap-1 text-xs rounded text-white font-bold"
+                      >
+                        <Check className="w-3 h-3" /> Save
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-200 leading-relaxed flex flex-wrap gap-1 mt-2">
+                    {cap.text.split(' ').map((word, i) => {
                     const cleanWord = word.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
                     const isHighlighted = cap.highlightedIndices 
                       ? cap.highlightedIndices.includes(i)
@@ -348,6 +393,7 @@ export const Editor: React.FC = () => {
                     );
                   })}
                 </p>
+                )}
               </div>
               );
             })}
@@ -380,7 +426,7 @@ export const Editor: React.FC = () => {
       </div>
 
       {/* Main Preview Area */}
-      <div className="flex-1 min-h-0 bg-gray-950 flex flex-col items-center justify-center p-8 border-r border-gray-800 rounded-xl relative">
+      <div className="flex-1 w-full min-h-[50vh] lg:min-h-0 bg-gray-950 flex flex-col items-center justify-center p-4 lg:p-8 border border-gray-800 rounded-xl relative">
         {(videoUrl || captions.length > 0) ? (
           isClient && (
             <div className="flex flex-col items-center w-full h-full justify-center">
@@ -423,7 +469,7 @@ export const Editor: React.FC = () => {
       </div>
 
       {/* Right Sidebar: Design & Animations */}
-      <div className="w-96 bg-gray-900 border border-gray-800 overflow-y-auto flex flex-col rounded-xl p-4">
+      <div className="w-full lg:w-96 flex-shrink-0 bg-gray-900 border border-gray-800 lg:overflow-y-auto flex flex-col rounded-xl p-4 lg:h-full">
         <StylePanel />
       </div>
       {/* Confirmation Modal */}
