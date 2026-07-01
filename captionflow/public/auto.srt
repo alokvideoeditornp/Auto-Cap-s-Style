@@ -1,0 +1,12 @@
+1
+00:00:00,266 --> 00:00:02,266
+Hi everyone today I will show you how to
+
+2
+00:00:02,300 --> 00:00:04,000
+create this waveform
+
+3
+00:00:04,566 --> 00:00:06,233
+animation in present page
+
