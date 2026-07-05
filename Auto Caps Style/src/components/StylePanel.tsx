@@ -1305,7 +1305,7 @@ export const StylePanel = () => {
         </div>
       </AccordionItem>
 
-      {presetContextMenu && (
+      {presetContextMenu && typeof document !== 'undefined' && createPortal(
         <div 
           className="fixed z-[9999] bg-gray-800 border border-gray-700 rounded shadow-2xl py-1 w-48"
           style={{ top: presetContextMenu.y, left: presetContextMenu.x }}
@@ -1325,7 +1325,8 @@ export const StylePanel = () => {
           >
             <Trash2 className="w-4 h-4" /> Delete Preset
           </button>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showResetModal && typeof document !== 'undefined' && createPortal(
