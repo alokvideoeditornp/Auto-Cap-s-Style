@@ -1,0 +1,18 @@
+﻿node.exe : [31mYou passed --props but it was neither valid JSON nor a file path to a valid JSON file. Provided value: 
+{\videoUrl\:null,\captions\:[],\styleConfig\:{\font\:\Inter\,\fontWeight\:800,\baseColor\:\#ffffff\,\accentColor\:\#00f
+fff\,\backgroundColor\:\#000000\,\fontSize\:80,\baseFontSizeMultiplier\:1,\accentFontSizeMultiplier\:1.2,\position\:\ce
+nter\,\textAlign\:\center\,\animationType\:\slide-up\,\displayMode\:\word\,\aspectRatio\:\9:16\,\highlightStyle\:\none\
+,\glowIntensity\:0,\lineLayout\:\auto\,\wrapText\:true,\clipText\:false,\textBoxWidth\:80,\textBoxHeight\:20}}[39m
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([31mYou passed...ight\:20}}[39m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Got the following value: {\videoUrl\:null,\captions\:[],\styleConfig\:{\font\:\Inter\,\fontWeight\:800,\baseColor\:\#ffffff\,\accentColor\:\#00ffff\,\backgroundColor\:\#000000\,\fontSize\:80,\baseFontSizeMultiplier\:1,\accentFontSizeMultiplier\:1.2,\position\:\center\,\textAlign\:\center\,\animationType\:\slide-up\,\displayMode\:\word\,\aspectRatio\:\9:16\,\highlightStyle\:\none\,\glowIntensity\:0,\lineLayout\:\auto\,\wrapText\:true,\clipText\:false,\textBoxWidth\:80,\textBoxHeight\:20}}
+[31mCheck that your input is parseable using `JSON.parse` and try again.[39m
+[33mNote: Windows handles escaping of quotes very weirdly in the command line.[39m
+[33mThis might have led to you having this problem.[39m
+[33mConsider using the alternative API for --props which is to pass[39m
+[33ma path to a JSON file:[39m
+[33m  --props=path/to/props.json[39m
