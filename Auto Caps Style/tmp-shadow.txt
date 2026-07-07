@@ -1,0 +1,84 @@
+﻿
+>           <label className="text-sm text-gray-400 font-medium">Text Drop Shadow</label>
+            <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
+              <button
+                onClick={() => handleUpdate({ enableDropShadow: false })}
+                className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                  styleConfig.enableDropShadow === false
+                    ? 'bg-gray-700 text-white shadow' 
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                Off
+              </button>
+              <button
+                onClick={() => handleUpdate({ enableDropShadow: true })}
+                className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                  styleConfig.enableDropShadow !== false
+                    ? 'bg-indigo-600 text-white shadow' 
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                On
+              </button>
+            </div>
+            {styleConfig.enableDropShadow !== false && (
+              <div className="mt-2 flex flex-col gap-3">
+                <div className="flex flex-col gap-2 bg-gray-900/50 p-2 rounded-lg border border-gray-700/50">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={styleConfig.dropShadowOnBase !== false}
+                      onChange={(e) => handleUpdate({ dropShadowOnBase: e.target.checked })}
+                      className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-500 focus:ring-indigo-500"
+                    />
+                    Apply to Normal Text
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={styleConfig.dropShadowOnHighlight !== false}
+                      onChange={(e) => handleUpdate({ dropShadowOnHighlight: e.target.checked })}
+                      className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-500 focus:ring-indigo-500"
+                    />
+                    Apply to Highlighted Text
+                  </label>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Shadow Opacity</span>
+                    <span className="font-mono">{styleConfig.dropShadowIntensity ?? 50}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={styleConfig.dropShadowIntensity ?? 50}
+                    onChange={(e) => handleUpdate({ dropShadowIntensity: parseInt(e.target.value) })}
+                    className="w-full accent-indigo-500"
+                  />
+                </div>
+  
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Shadow Angle</span>
+                    <span className="font-mono">{styleConfig.dropShadowAngle ?? 45}Â°</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    step="1"
+                    value={styleConfig.dropShadowAngle ?? 45}
+                    onChange={(e) => handleUpdate({ dropShadowAngle: parseInt(e.target.value) })}
+                    className="w-full accent-indigo-500"
+                  />
+                </div>
+  
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Shadow Distance</span>
+                    <span className="font-mono">{styleConfig.dropShadowDistance ?? 15}%</span>
+
+

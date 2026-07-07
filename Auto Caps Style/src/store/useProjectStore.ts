@@ -16,7 +16,7 @@ export type CaptionSegment = {
 export type AspectRatio = '9:16' | '16:9';
 export type CaptionPosition = 'lower-third' | 'center' | 'top';
 export type AnimationType = 'none' | 'slide-up' | 'pop' | 'fade' | 'typewriter' | 'elastic-bounce' | 'kinetic-clash' | 'chaos-converge';
-export type DisplayMode = 'line' | 'word' | 'letter';
+export type DisplayMode = 'line' | 'word' | 'letter' | 'karaoke';
 export type TextAlign = 'left' | 'center' | 'right';
 export type HighlightStyle = 'none' | 'subtitle' | 'glow' | 'highlight' | 'underline';
 
@@ -41,7 +41,7 @@ export interface StyleConfig {
   clipText: boolean;
   textBoxWidth: number;
   textBoxHeight: number;
-  staggerSpeedMode: 'auto' | 'timecode';
+  staggerSpeedMode: 'auto' | 'timecode' | 'math';
   motionBlur: boolean;
   motionBlurIntensity: number;
   enableHighlightFont: boolean;
@@ -56,6 +56,16 @@ export interface StyleConfig {
   dropShadowColor: string;
   dropShadowOnBase: boolean;
   dropShadowOnHighlight: boolean;
+  dropShadowOnUnderlay: boolean;
+  enableInnerShadow: boolean;
+  innerShadowIntensity: number;
+  innerShadowAngle: number;
+  innerShadowDistance: number;
+  innerShadowBlur: number;
+  innerShadowColor: string;
+  innerShadowOnBase: boolean;
+  innerShadowOnHighlight: boolean;
+  innerShadowOnUnderlay: boolean;
   activePreset?: string;
 }
 
@@ -147,6 +157,16 @@ export const defaultStyle: StyleConfig = {
   dropShadowColor: '#000000',
   dropShadowOnBase: true,
   dropShadowOnHighlight: true,
+  dropShadowOnUnderlay: false,
+  enableInnerShadow: false,
+  innerShadowIntensity: 50,
+  innerShadowAngle: 45,
+  innerShadowDistance: 15,
+  innerShadowBlur: 20,
+  innerShadowColor: '#000000',
+  innerShadowOnBase: true,
+  innerShadowOnHighlight: true,
+  innerShadowOnUnderlay: false,
 };
 
 export const useProjectStore = create<ProjectState>()(
@@ -268,3 +288,4 @@ export const useProjectStore = create<ProjectState>()(
     },
   }
 ));
+

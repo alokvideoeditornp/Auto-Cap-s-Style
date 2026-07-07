@@ -2,6 +2,7 @@ import { useCurrentFrame, useVideoConfig, spring, interpolate } from 'remotion';
 import React, { useRef, useLayoutEffect } from 'react';
 import { CaptionSegment, StyleConfig, useProjectStore } from '../store/useProjectStore';
 
+
 interface CaptionLineProps {
   segment: CaptionSegment;
   styleConfig: StyleConfig;
@@ -116,7 +117,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
     content.style.textAlign = originalTextAlign;
     
     let scale = 1;
-    let isOut = false;
+    const isOut = false;
     
     if (contentW > containerW || contentH > containerH) {
       const scaleX = containerW / contentW;
@@ -148,17 +149,47 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
 
   const renderContent = () => {
     let itemIndex = 0; // global counter for letters if in letter mode
+    
+    // For math stagger
+    const totalChars = words.reduce((sum, w) => sum + w.length, 0);
 
     const elements = words.map((word, wIdx) => {
-      const cleanWord = word.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
-      const isHighlighted = (segment.highlightedIndices || []).length > 0
-        ? segment.highlightedIndices!.includes(wIdx) 
-        : (segment.highlightedWords || []).some(hw => hw.toLowerCase() === cleanWord);
+      const cleanWord = word.replace(/[.,!?;:"'(){}[\]\-]/g, '').toLowerCase().trim();
+      
+      let isHighlighted = false;
+      let karaokeStartFrame = 0;
+      
+      if (styleConfig.displayMode === 'karaoke') {
+        const totalChars = words.reduce((sum, w) => sum + w.length, 0);
+        let startCharIndex = 0;
+        for (let i = 0; i < wIdx; i++) {
+          startCharIndex += words[i].length;
+        }
+        
+        karaokeStartFrame = (startCharIndex / Math.max(1, totalChars)) * durationInFrames;
+        const endFrame = ((startCharIndex + word.length) / Math.max(1, totalChars)) * durationInFrames;
+        
+        if (frame >= karaokeStartFrame && (wIdx === words.length - 1 ? frame <= endFrame : frame < endFrame)) {
+          isHighlighted = true;
+        }
+      } else {
+        isHighlighted = (segment.highlightedIndices || []).length > 0
+          ? segment.highlightedIndices!.includes(wIdx) 
+          : (segment.highlightedWords || []).some(hw => hw.toLowerCase() === cleanWord);
+      }
       
       const color = isHighlighted ? styleConfig.accentColor : styleConfig.baseColor;
-      const fontSize = isHighlighted 
+      
+      let fontSize = isHighlighted 
         ? `${styleConfig.fontSize * styleConfig.accentFontSizeMultiplier}px` 
         : `${styleConfig.fontSize * styleConfig.baseFontSizeMultiplier}px`;
+        
+      let scaleMultiplier = 1;
+      if (styleConfig.displayMode === 'karaoke') {
+        fontSize = `${styleConfig.fontSize * styleConfig.baseFontSizeMultiplier}px`;
+        // Scale is locked to 1 in karaoke mode to completely prevent overlapping text
+        scaleMultiplier = 1;
+      }
       
       const fontFamily = isHighlighted && styleConfig.enableHighlightFont 
         ? `"${styleConfig.highlightFont}", "Noto Sans Devanagari", "Noto Sans Arabic", "Noto Sans Bengali", "Noto Sans", sans-serif`
@@ -169,7 +200,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         : (styleConfig.fontWeight ?? 800);
 
       const verticalMargin = ((styleConfig.lineSpacing ?? 1.1) - 1.1) * 0.5;
-      const wordStyles: React.CSSProperties = { margin: `${verticalMargin}em 8px`, display: 'flex', flexDirection: 'row' };
+      const wordStyles: React.CSSProperties = { margin: `${verticalMargin}em 8px`, display: 'inline-block', whiteSpace: 'nowrap' };
 
       if (styleConfig.displayMode === 'letter') {
         let letters: string[] = [];
@@ -198,9 +229,9 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
                   isHighlighted={isHighlighted}
                   index={currentItemIndex}
                   fontFamily={fontFamily}
-                  fontWeight={fontWeight}
-                  isRendering={isRendering}
+                  fontWeight={fontWeight as any}
                   durationInFrames={durationInFrames}
+                  scaleMultiplier={scaleMultiplier}
                 />
               );
             })}
@@ -208,12 +239,21 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         );
       }
 
-      // Word or Line mode
       let delay = 0;
       if (styleConfig.displayMode === 'word') {
-        delay = wIdx * staggerFrames;
+        if (styleConfig.staggerSpeedMode === 'math') {
+          let startCharIndex = 0;
+          for (let i = 0; i < wIdx; i++) {
+            startCharIndex += words[i].length;
+          }
+          delay = (startCharIndex / Math.max(1, totalChars)) * availableFramesForStagger;
+        } else {
+          delay = wIdx * staggerFrames;
+        }
       } else if (styleConfig.displayMode === 'line') {
         delay = 0; // All text animates at once
+      } else if (styleConfig.displayMode === 'karaoke') {
+        delay = karaokeStartFrame; // Words animate in sequentially as they are highlighted
       }
       
       return (
@@ -230,22 +270,54 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
             isHighlighted={isHighlighted}
             index={wIdx}
             fontFamily={fontFamily}
-            fontWeight={fontWeight}
+            fontWeight={fontWeight as any}
+            durationInFrames={durationInFrames}
+            scaleMultiplier={scaleMultiplier}
             isFirstCaption={segment.startTime === 0}
             isRendering={isRendering}
-            durationInFrames={durationInFrames}
           />
         </span>
       );
     });
 
-    if (styleConfig.lineLayout === 'double' && words.length > 2) {
-      const half = Math.ceil(words.length / 2);
-      elements.splice(half, 0, <div key="break" style={{ flexBasis: '100%', height: 0 }} />);
+    if (styleConfig.lineLayout === 'double' && elements.length > 1) {
+      const half = Math.ceil(elements.length / 2);
+      const line1 = elements.slice(0, half);
+      const line2 = elements.slice(half);
+      
+      const align = styleConfig.textAlign === 'left' ? 'flex-start' : styleConfig.textAlign === 'right' ? 'flex-end' : 'center';
+
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', width: 'max-content', alignItems: align }}>
+          <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', justifyContent: align, alignItems: 'baseline' }}>
+            {line1}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', justifyContent: align, alignItems: 'baseline' }}>
+            {line2}
+          </div>
+        </div>
+      );
     }
 
     return elements;
   };
+
+  const innerAngle = styleConfig.innerShadowAngle ?? 45;
+  const innerDistance = styleConfig.innerShadowDistance ?? 15;
+  const innerSoftness = styleConfig.innerShadowBlur ?? 20;
+  const innerOpacity = styleConfig.innerShadowIntensity ?? 50;
+  
+  const innerShadowDistancePx = (innerDistance / 100) * 30;
+  const innerShadowOffsetX = Math.cos((innerAngle * Math.PI) / 180) * innerShadowDistancePx;
+  const innerShadowOffsetY = Math.sin((innerAngle * Math.PI) / 180) * innerShadowDistancePx;
+  const innerShadowBlurPx = (innerSoftness / 100) * 40;
+  const innerShadowAlpha = innerOpacity / 100;
+  
+  const innerShadowColorHex = styleConfig.innerShadowColor ?? '#000000';
+  const innerRgbMatch = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(innerShadowColorHex);
+  const innerShadowRgb = innerRgbMatch 
+    ? `${parseInt(innerRgbMatch[1], 16)}, ${parseInt(innerRgbMatch[2], 16)}, ${parseInt(innerRgbMatch[3], 16)}` 
+    : '0, 0, 0';
 
   return (
     <div
@@ -254,6 +326,8 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         width: styleConfig.lineLayout === 'single' ? '100%' : `${styleConfig.textBoxWidth ?? 96}%`,
         height: (styleConfig.clipText ?? false) ? `${styleConfig.textBoxHeight ?? 20}%` : 'auto',
         maxHeight: '90%', // Prevent overflowing the canvas vertically
+        minHeight: 0,
+        minWidth: 0,
         display: 'flex',
         justifyContent: styleConfig.textAlign === 'left' ? 'flex-start' : styleConfig.textAlign === 'right' ? 'flex-end' : 'center',
         alignItems: 'center',
@@ -261,6 +335,18 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         border: showTextBoxBorder ? '2px dashed red' : 'none',
       }}
     >
+      {styleConfig.enableInnerShadow !== false && (
+        <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+          <filter id="inner-shadow-filter" x="-20%" y="-20%" width="140%" height="140%">
+            <feOffset dx={innerShadowOffsetX} dy={innerShadowOffsetY}/>
+            <feGaussianBlur stdDeviation={innerShadowBlurPx} result="offset-blur"/>
+            <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
+            <feFlood floodColor={`rgba(${innerShadowRgb}, ${innerShadowAlpha})`} floodOpacity="1" result="color"/>
+            <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
+            <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
+          </filter>
+        </svg>
+      )}
       <div
         ref={contentRef}
         style={{
@@ -273,7 +359,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
           fontWeight: styleConfig.fontWeight ?? 800,
           textAlign: styleConfig.textAlign ?? 'center',
           whiteSpace: (styleConfig.wrapText ?? true) && styleConfig.lineLayout !== 'single' ? 'normal' : 'nowrap',
-          width: styleConfig.highlightStyle === 'subtitle' ? 'fit-content' : '100%',
+          width: (styleConfig.highlightStyle === 'subtitle' || styleConfig.lineLayout === 'single' || styleConfig.lineLayout === 'double') ? 'max-content' : '100%',
           lineHeight: styleConfig.lineSpacing ?? 1.1,
           backgroundColor: styleConfig.highlightStyle === 'subtitle' ? (styleConfig.backgroundColor || '#000000') : 'transparent',
           padding: styleConfig.highlightStyle === 'subtitle' ? '0.2em 0.4em' : '0',
@@ -299,11 +385,12 @@ const AnimatedItem: React.FC<{
   isHighlighted?: boolean;
   index: number;
   fontFamily: string;
-  fontWeight: number;
+  fontWeight?: number;
   isFirstCaption?: boolean;
   isRendering?: boolean;
   durationInFrames: number;
-}> = ({ char, frame, fps, delay, styleConfig, exitProgress, color, fontSize, isHighlighted, index, fontFamily, fontWeight, isFirstCaption, isRendering, durationInFrames }) => {
+  scaleMultiplier?: number;
+}> = ({ char, frame, fps, delay, styleConfig, exitProgress, color, fontSize, isHighlighted, index, fontFamily, fontWeight, isFirstCaption, isRendering, durationInFrames, scaleMultiplier = 1 }) => {
   const defaultEntranceFrames = Math.round((300 / 1000) * fps); // 300ms
   const maxEntranceFrames = Math.max(1, durationInFrames - delay);
   const entranceDurationFrames = Math.min(defaultEntranceFrames, maxEntranceFrames);
@@ -332,7 +419,7 @@ const AnimatedItem: React.FC<{
     fontFamily,
     fontWeight,
   };
-  let finalColor = color;
+  const finalColor = color;
   
   if (isHighlighted && styleConfig.highlightStyle === 'highlight') {
     extraStyles.backgroundColor = styleConfig.backgroundColor || '#000000';
@@ -391,11 +478,12 @@ const AnimatedItem: React.FC<{
       const blurAmount = interpolate(entranceProgress, [0, 1], [intensity, 0]);
       const exitBlur = interpolate(exitProgress, [0, 1], [0, intensity]);
       const currentBlur = Math.max(blurAmount, exitBlur);
-      // Always apply the filter to prevent GPU flash glitches when it transitions to 0
-      if (extraStyles.filter) {
-        extraStyles.filter += ` blur(${currentBlur}px)`;
-      } else {
-        extraStyles.filter = `blur(${currentBlur}px)`;
+      if (currentBlur > 0) {
+        if (extraStyles.filter) {
+          extraStyles.filter += ` blur(${currentBlur}px)`;
+        } else {
+          extraStyles.filter = `blur(${currentBlur}px)`;
+        }
       }
     }
   } else if (styleConfig.animationType === 'chaos-converge') {
@@ -423,11 +511,12 @@ const AnimatedItem: React.FC<{
     const blurAmount = interpolate(entranceProgress, [0, 1], [intensity, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     const exitBlur = interpolate(exitProgress, [0, 1], [0, intensity], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     const currentBlur = Math.max(blurAmount, exitBlur);
-    // Always apply the filter to prevent GPU flash glitches when it transitions to 0
-    if (extraStyles.filter) {
-      extraStyles.filter += ` blur(${currentBlur}px)`;
-    } else {
-      extraStyles.filter = `blur(${currentBlur}px)`;
+    if (currentBlur > 0) {
+      if (extraStyles.filter) {
+        extraStyles.filter += ` blur(${currentBlur}px)`;
+      } else {
+        extraStyles.filter = `blur(${currentBlur}px)`;
+      }
     }
   }
 
@@ -470,12 +559,25 @@ const AnimatedItem: React.FC<{
     }
   }
 
+  const applyInnerShadow = styleConfig.enableInnerShadow !== false &&
+    ((isHighlighted && styleConfig.innerShadowOnHighlight !== false) ||
+     (!isHighlighted && styleConfig.innerShadowOnBase !== false));
+     
+  if (applyInnerShadow) {
+    const innerShadowUrl = 'url(#inner-shadow-filter)';
+    if (extraStyles.filter) {
+      extraStyles.filter += ` ${innerShadowUrl}`;
+    } else {
+      extraStyles.filter = innerShadowUrl;
+    }
+  }
+
   return (
     <span
       style={{
         display: 'inline-block',
         opacity,
-        transform: `translate(${translateX}px, ${translateY}px) scale(${scale}) rotate(${rotate}deg)`,
+        transform: `translate(${translateX}px, ${translateY}px) scale(${scale * scaleMultiplier}) rotate(${rotate}deg)`,
         color: finalColor,
         fontSize,
         ...extraStyles,
@@ -485,3 +587,7 @@ const AnimatedItem: React.FC<{
     </span>
   );
 };
+
+
+
+

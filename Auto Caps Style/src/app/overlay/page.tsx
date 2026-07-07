@@ -49,6 +49,11 @@ function OverlayContent() {
   return (
     <div style={{ width: '100vw', height: '100vh', background: 'transparent', overflow: 'hidden' }}>
       <Player
+        renderLoading={() => (
+          <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: 1, height: 1, backgroundColor: 'black', opacity: 1 }} />
+          </div>
+        )}
         component={CaptionComposition}
         inputProps={{ videoUrl, captions, styleConfig }}
         durationInFrames={durationInFrames}

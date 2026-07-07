@@ -21,11 +21,10 @@ export const Editor: React.FC = () => {
   const setHighlightSimilar = useProjectStore((state) => state.setHighlightSimilar);
   const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
   const [editingCaptionText, setEditingCaptionText] = useState('');
-  
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isMemoryBoxOpen, setIsMemoryBoxOpen] = useState(false);
-
+  
   // Hydration state for rendering safely
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -243,6 +242,35 @@ export const Editor: React.FC = () => {
   const playerRef = useRef<PlayerRef>(null);
 
   useEffect(() => {
+    let animationFrameId: number;
+    const updateActiveCaption = () => {
+      if (playerRef.current && captions.length > 0) {
+        const frame = playerRef.current.getCurrentFrame();
+        const timeMs = (frame / fps) * 1000;
+        
+        captions.forEach(cap => {
+          const el = document.getElementById(`caption-item-${cap.id}`);
+          if (el) {
+            const isActive = timeMs >= cap.startTime && timeMs <= cap.endTime;
+            if (isActive) {
+              el.style.borderColor = '#6366f1'; 
+              el.style.backgroundColor = 'rgba(49, 46, 129, 0.4)';
+              el.style.boxShadow = '0 0 10px rgba(99,102,241,0.2)';
+            } else {
+              el.style.borderColor = '';
+              el.style.backgroundColor = '';
+              el.style.boxShadow = '';
+            }
+          }
+        });
+      }
+      animationFrameId = requestAnimationFrame(updateActiveCaption);
+    };
+    updateActiveCaption();
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [captions, fps]);
+
+  useEffect(() => {
     setTimeout(() => setIsClient(true), 0);
   }, []);
 
@@ -302,13 +330,13 @@ export const Editor: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen lg:overflow-hidden overflow-y-auto bg-black text-white p-4 gap-6 relative">
+    <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen lg:overflow-hidden bg-black text-white p-4 gap-4 lg:gap-6 relative">
       {/* Invisible video element to grab metadata */}
       <video ref={videoRef} className="hidden" />
 
       {/* Left Sidebar: Captions, Render */}
       {isLeftPanelOpen && (
-        <div className="w-full lg:w-80 flex-shrink-0 bg-gray-900 border border-gray-800 flex flex-col rounded-xl relative z-10 lg:h-full max-h-[60vh] lg:max-h-full transition-all duration-300">
+        <div className="w-full lg:w-80 flex-shrink-0 bg-gray-900 border border-gray-800 flex flex-col rounded-xl relative z-10 lg:h-full">
           {/* Watermark and Toggle */}
           <div className="px-4 pt-5 pb-1 flex justify-between items-center flex-shrink-0">
             <h1 className="text-white/30 text-base font-bold tracking-[0.15em] font-sans pointer-events-none select-none">
@@ -323,16 +351,7 @@ export const Editor: React.FC = () => {
         <div className="flex-1 p-4 overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold text-gray-200">Captions</h2>
-            <div className="flex gap-2 items-center">
-              <button 
-                onClick={() => setConfirmAction({ type: 'reload', open: true })}
-                className="flex items-center gap-1 px-2 py-1 bg-green-600 hover:bg-green-500 rounded text-xs font-semibold text-white transition"
-                title="Reload captions from DaVinci Timeline"
-              >
-                <RefreshCcw className="w-3 h-3" /> Reload
-              </button>
-
-              <button 
+            <div className="flex gap-2 items-center">              <button 
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -397,6 +416,7 @@ export const Editor: React.FC = () => {
               
               return (
               <div 
+                id={`caption-item-${cap.id}`}
                 key={cap.id} 
                 onClick={() => {
                   if (individualStylingEnabled) {
@@ -525,7 +545,7 @@ export const Editor: React.FC = () => {
       )}
 
       {/* Main Preview Area */}
-      <div className="flex-1 w-full min-h-[50vh] lg:min-h-0 bg-gray-950 flex flex-col items-center justify-center p-4 lg:p-8 border border-gray-800 rounded-xl relative">
+      <div className="flex-none lg:flex-1 w-full h-[50vh] lg:h-full bg-gray-950 flex flex-col items-center justify-center p-4 lg:p-8 border border-gray-800 rounded-xl relative">
         {!isLeftPanelOpen && (
           <button onClick={() => setIsLeftPanelOpen(true)} className="absolute top-4 left-4 z-20 text-gray-400 hover:text-white bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-lg transition" title="Open Captions Panel">
             <PanelLeftOpen className="w-5 h-5" />
@@ -548,6 +568,11 @@ export const Editor: React.FC = () => {
               )}
               <Player
                 ref={playerRef}
+                renderLoading={() => (
+                  <div style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}>
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: 1, height: 1, backgroundColor: 'black', opacity: 1 }} />
+                  </div>
+                )}
                 component={CaptionComposition}
                 inputProps={{
                   videoUrl,
@@ -590,7 +615,7 @@ export const Editor: React.FC = () => {
 
       {/* Right Sidebar: Design & Animations */}
       {isRightPanelOpen && (
-        <div className="w-full lg:w-96 flex-shrink-0 bg-gray-900 border border-gray-800 lg:overflow-y-auto flex flex-col rounded-xl p-4 lg:h-full relative transform-gpu">
+        <div className="w-full lg:w-96 flex-shrink-0 bg-gray-900 border border-gray-800 lg:overflow-y-auto flex flex-col rounded-xl p-4 relative transform-gpu lg:h-full">
           <div className="flex justify-end absolute top-4 right-4 z-20">
             <button onClick={() => setIsRightPanelOpen(false)} className="text-gray-400 hover:text-white transition p-1" title="Close Panel">
               <PanelRightClose className="w-5 h-5" />
@@ -781,3 +806,4 @@ export const Editor: React.FC = () => {
     </div>
   );
 };
+

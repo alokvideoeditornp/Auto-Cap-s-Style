@@ -222,6 +222,28 @@ const PRESETS: { name: string; config: Partial<StyleConfig>; preview: React.Reac
         UNDERLINE <span style={{ color: '#FFD400', textDecoration: 'underline', textDecorationColor: '#ff0000', textDecorationThickness: '0.1em', textUnderlineOffset: '0.15em' }}>POP</span>
       </span>
     )
+  },
+  {
+    name: 'Auto Highlight',
+    config: {
+      font: 'Montserrat', baseColor: '#ffffff', accentColor: '#ffffff', backgroundColor: '#ff0000', fontSize: 130, baseFontSizeMultiplier: 0.9, accentFontSizeMultiplier: 1.1, animationType: 'pop', displayMode: 'word', highlightStyle: 'highlight'
+    },
+    preview: (
+      <span style={{ fontFamily: 'Montserrat', color: '#ffffff', fontSize: '13px', fontWeight: 800 }}>
+        AUTO <span style={{ color: '#ffffff', backgroundColor: '#ff0000', padding: '0px 4px', borderRadius: '4px' }}>HIGHLIGHT</span>
+      </span>
+    )
+  },
+  {
+    name: 'Karaoke Word',
+    config: {
+      font: 'Montserrat', baseColor: '#ffffff', accentColor: '#ffffff', backgroundColor: '#ffb703', fontSize: 130, baseFontSizeMultiplier: 1.0, accentFontSizeMultiplier: 1.1, animationType: 'none', displayMode: 'karaoke', highlightStyle: 'highlight'
+    },
+    preview: (
+      <span style={{ fontFamily: 'Montserrat', color: '#ffffff', fontSize: '13px', fontWeight: 800 }}>
+        KARAOKE <span style={{ color: '#ffffff', backgroundColor: '#ffb703', padding: '0px 4px', borderRadius: '4px' }}>WORD</span>
+      </span>
+    )
   }
 ];
 
@@ -431,7 +453,7 @@ export const StylePanel = () => {
   const [isLoadingFonts, setIsLoadingFonts] = useState(systemFonts.length === 0);
   const [presetTab, setPresetTab] = useState<'system'|'custom'>('system');
   const [newPresetName, setNewPresetName] = useState('');
-  const [openPanels, setOpenPanels] = useState<string[]>(["💡 Layout"]);
+  const [openPanels, setOpenPanels] = useState<string[]>(["Ã°Å¸â€™Â¡ Layout"]);
   const [autoCollapsePanels, setAutoCollapsePanels] = useState(false);
   const [presetContextMenu, setPresetContextMenu] = useState<{x: number, y: number, presetName: string} | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -551,7 +573,7 @@ export const StylePanel = () => {
         </div>
       )}
 
-      <AccordionItem title="⚙️ Video Settings" isOpen={openPanels.includes("Video Settings")} onToggle={() => togglePanel("Video Settings")}>
+      <AccordionItem title="Video Settings" isOpen={openPanels.includes("Video Settings")} onToggle={() => togglePanel("Video Settings")}>
         <div className="flex flex-col gap-2">
           <label className="text-sm text-gray-400 font-medium">Video Format</label>
           <div className="flex gap-2">
@@ -573,7 +595,7 @@ export const StylePanel = () => {
 
       </AccordionItem>
 
-      <AccordionItem title="✨ Quick Presets" isOpen={openPanels.includes("Quick Presets")} onToggle={() => togglePanel("Quick Presets")}>
+      <AccordionItem title="Quick Presets" isOpen={openPanels.includes("Quick Presets")} onToggle={() => togglePanel("Quick Presets")}>
         <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700 mb-2">
           <button
             onClick={() => setPresetTab('system')}
@@ -618,7 +640,7 @@ export const StylePanel = () => {
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-800 group-hover:bg-gray-750 transition pb-4 pointer-events-none">
                   {preset.preview}
                 </div>
-                <div className="absolute bottom-0 inset-x-0 bg-black/80 py-1.5 flex items-center justify-center backdrop-blur-md border-t border-gray-700/50 z-10">
+                <div className="absolute bottom-0 inset-x-0 bg-black/80 py-1.5 flex items-center justify-center  border-t border-gray-700/50 z-10">
                   <span className="text-[9px] font-bold text-gray-100 tracking-wider uppercase drop-shadow-md">{preset.name}</span>
                 </div>
               </button>
@@ -694,7 +716,7 @@ export const StylePanel = () => {
                       <div className="absolute inset-0 flex items-center justify-center bg-gray-800 group-hover:bg-gray-750 transition pb-4 pointer-events-none">
                         <CustomPreview config={preset.config} />
                       </div>
-                      <div className="absolute bottom-0 inset-x-0 bg-black/80 py-1.5 flex items-center justify-center backdrop-blur-md border-t border-gray-700/50 z-10">
+                      <div className="absolute bottom-0 inset-x-0 bg-black/80 py-1.5 flex items-center justify-center  border-t border-gray-700/50 z-10">
                         <span className="text-[9px] font-bold text-gray-100 tracking-wider uppercase drop-shadow-md truncate px-1">{preset.name}</span>
                       </div>
                     </button>
@@ -706,7 +728,7 @@ export const StylePanel = () => {
         )}
       </AccordionItem>
 
-      <AccordionItem title="📝 Typography & Colors" isOpen={openPanels.includes("Typography & Colors")} onToggle={() => togglePanel("Typography & Colors")}>
+      <AccordionItem title="Typography & Colors" isOpen={openPanels.includes("Typography & Colors")} onToggle={() => togglePanel("Typography & Colors")}>
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <label className="text-sm text-gray-400 font-medium flex items-center gap-1">
@@ -968,7 +990,7 @@ export const StylePanel = () => {
         </div>
       </AccordionItem>
 
-      <AccordionItem title="📐 Layout & Positioning" isOpen={openPanels.includes("Layout & Positioning")} onToggle={() => togglePanel("Layout & Positioning")}>
+      <AccordionItem title="Layout & Positioning" isOpen={openPanels.includes("Layout & Positioning")} onToggle={() => togglePanel("Layout & Positioning")}>
         <div className="flex flex-col gap-2">
           <label className="text-sm text-gray-400 font-medium">Lines per Caption</label>
           <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
@@ -1065,11 +1087,11 @@ export const StylePanel = () => {
         </div>
       </AccordionItem>
 
-      <AccordionItem title="🎬 Animations" isOpen={openPanels.includes("Animations")} onToggle={() => togglePanel("Animations")}>
+      <AccordionItem title="Animations" isOpen={openPanels.includes("Animations")} onToggle={() => togglePanel("Animations")}>
         <div className="flex flex-col gap-2">
           <label className="text-sm text-gray-400 font-medium">Stagger Mode (Speed)</label>
           <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
-            {(['line', 'word', 'letter'] as const).map((mode) => (
+            {(['line', 'word', 'letter', 'karaoke'] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => handleUpdate({ displayMode: mode })}
@@ -1109,6 +1131,17 @@ export const StylePanel = () => {
                 >
                   Match Timecode
                 </button>
+                <button
+                  onClick={() => handleUpdate({ staggerSpeedMode: 'math' })}
+                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                    (styleConfig.staggerSpeedMode ?? 'auto') === 'math'
+                      ? 'bg-gray-700 text-white shadow' 
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                  title="Natural voice sync based on word length"
+                >
+                  Audio Sync
+                </button>
               </div>
             </div>
           )}
@@ -1139,7 +1172,7 @@ export const StylePanel = () => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-700">
           <label className="text-sm text-gray-400 font-medium">Motion Blur</label>
           <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
             <button
@@ -1182,7 +1215,7 @@ export const StylePanel = () => {
           )}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-700">
           <label className="text-sm text-gray-400 font-medium">Text Drop Shadow</label>
           <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
             <button
@@ -1247,7 +1280,7 @@ export const StylePanel = () => {
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Angle</span>
-                  <span className="font-mono">{styleConfig.dropShadowAngle ?? 45}°</span>
+                  <span className="font-mono">{styleConfig.dropShadowAngle ?? 45}&deg;</span>
                 </div>
                 <input
                   type="range"
@@ -1296,6 +1329,128 @@ export const StylePanel = () => {
                 label="Shadow Color"
                 value={styleConfig.dropShadowColor ?? '#000000'}
                 onChange={(c) => handleUpdate({ dropShadowColor: c })}
+                savedColors={customColors}
+                onSave={addCustomColor}
+                onRemove={removeCustomColor}
+              />
+            </div>
+          )}
+        </div>
+        
+        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-700">
+          <label className="text-sm text-gray-400 font-medium">Text Inner Shadow</label>
+          <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
+            <button
+              onClick={() => handleUpdate({ enableInnerShadow: false })}
+              className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                styleConfig.enableInnerShadow === false
+                  ? 'bg-gray-700 text-white shadow' 
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              Off
+            </button>
+            <button
+              onClick={() => handleUpdate({ enableInnerShadow: true })}
+              className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                styleConfig.enableInnerShadow !== false
+                  ? 'bg-indigo-600 text-white shadow' 
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              On
+            </button>
+          </div>
+          {styleConfig.enableInnerShadow !== false && (
+            <div className="mt-2 flex flex-col gap-3">
+              <div className="flex flex-col gap-2 bg-gray-900/50 p-2 rounded-lg border border-gray-700/50">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={styleConfig.innerShadowOnBase !== false}
+                    onChange={(e) => handleUpdate({ innerShadowOnBase: e.target.checked })}
+                    className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-500 focus:ring-indigo-500"
+                  />
+                  Apply to Normal Text
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={styleConfig.innerShadowOnHighlight !== false}
+                    onChange={(e) => handleUpdate({ innerShadowOnHighlight: e.target.checked })}
+                    className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-500 focus:ring-indigo-500"
+                  />
+                  Apply to Highlighted Text
+                </label>
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Shadow Opacity</span>
+                  <span className="font-mono">{styleConfig.innerShadowIntensity ?? 50}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={styleConfig.innerShadowIntensity ?? 50}
+                  onChange={(e) => handleUpdate({ innerShadowIntensity: parseInt(e.target.value) })}
+                  className="w-full accent-indigo-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Shadow Angle</span>
+                  <span className="font-mono">{styleConfig.innerShadowAngle ?? 45}&deg;</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="360"
+                  step="1"
+                  value={styleConfig.innerShadowAngle ?? 45}
+                  onChange={(e) => handleUpdate({ innerShadowAngle: parseInt(e.target.value) })}
+                  className="w-full accent-indigo-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Shadow Distance</span>
+                  <span className="font-mono">{styleConfig.innerShadowDistance ?? 15}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={styleConfig.innerShadowDistance ?? 15}
+                  onChange={(e) => handleUpdate({ innerShadowDistance: parseInt(e.target.value) })}
+                  className="w-full accent-indigo-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Shadow Softness</span>
+                  <span className="font-mono">{styleConfig.innerShadowBlur ?? 20}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={styleConfig.innerShadowBlur ?? 20}
+                  onChange={(e) => handleUpdate({ innerShadowBlur: parseInt(e.target.value) })}
+                  className="w-full accent-indigo-500"
+                />
+              </div>
+
+              <CustomColorPicker 
+                label="Shadow Color"
+                value={styleConfig.innerShadowColor ?? '#000000'}
+                onChange={(c) => handleUpdate({ innerShadowColor: c })}
                 savedColors={customColors}
                 onSave={addCustomColor}
                 onRemove={removeCustomColor}
@@ -1414,7 +1569,7 @@ export const StylePanel = () => {
       )}
 
       {/* Preload the first 50 fonts to prevent lag when opening the font dropdown */}
-      <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', top: -9999, width: 0, height: 0, overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', opacity: 0, pointerEvents: 'none', zIndex: -1, width: '1px', height: '1px', overflow: 'hidden' }}>
         {systemFonts.slice(0, 50).map(font => (
           <span key={font.family} style={{ fontFamily: `"${font.family}", sans-serif` }}>preload</span>
         ))}
@@ -1422,3 +1577,9 @@ export const StylePanel = () => {
     </div>
   );
 };
+
+
+
+
+
+

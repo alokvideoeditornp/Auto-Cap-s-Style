@@ -1,12 +1,20 @@
 1
-00:00:00,266 --> 00:00:02,266
-Hi everyone today I will show you how to
+00:00:00,266 --> 00:00:01,866
+Hi everyone, today I will show you
 
 2
-00:00:02,300 --> 00:00:04,000
-create this waveform
+00:00:01,866 --> 00:00:05,366
+How to create this waveform animation in present
 
 3
-00:00:04,566 --> 00:00:06,233
-animation in present page
+00:00:05,366 --> 00:00:06,433
+Fusion page.
+
+4
+00:00:06,566 --> 00:00:08,333
+I will add first background.
+
+5
+00:00:09,800 --> 00:00:14,333
+Then after I want to source Reven 3D.
 

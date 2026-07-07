@@ -1,0 +1,122 @@
+﻿<label className="text-sm text-gray-400 font-medium">Text Inner Shadow</label>
+          <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
+            <button
+              onClick={() => handleUpdate({ enableInnerShadow: false })}
+              className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                styleConfig.enableInnerShadow === false
+                  ? 'bg-gray-700 text-white shadow' 
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              Off
+            </button>
+            <button
+              onClick={() => handleUpdate({ enableInnerShadow: true })}
+              className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                styleConfig.enableInnerShadow !== false
+                  ? 'bg-indigo-600 text-white shadow' 
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              On
+            </button>
+          </div>
+          {styleConfig.enableInnerShadow !== false && (
+            <div className="mt-2 flex flex-col gap-3">
+              <div className="flex flex-col gap-2 bg-gray-900/50 p-2 rounded-lg border border-gray-700/50">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={styleConfig.innerShadowOnBase !== false}
+                    onChange={(e) => handleUpdate({ innerShadowOnBase: e.target.checked })}
+                    className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-500 focus:ring-indigo-500"
+                  />
+                  Apply to Normal Text
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={styleConfig.innerShadowOnHighlight !== false}
+                    onChange={(e) => handleUpdate({ innerShadowOnHighlight: e.target.checked })}
+                    className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-500 focus:ring-indigo-500"
+                  />
+                  Apply to Highlighted Text
+                </label>
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Shadow Opacity</span>
+                  <span className="font-mono">{styleConfig.innerShadowIntensity ?? 50}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={styleConfig.innerShadowIntensity ?? 50}
+                  onChange={(e) => handleUpdate({ innerShadowIntensity: parseInt(e.target.value) })}
+                  className="w-full accent-indigo-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Shadow Angle</span>
+                  <span className="font-mono">{styleConfig.innerShadowAngle ?? 45}Â°</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="360"
+                  step="1"
+                  value={styleConfig.innerShadowAngle ?? 45}
+                  onChange={(e) => handleUpdate({ innerShadowAngle: parseInt(e.target.value) })}
+                  className="w-full accent-indigo-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Shadow Distance</span>
+                  <span className="font-mono">{styleConfig.innerShadowDistance ?? 15}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={styleConfig.innerShadowDistance ?? 15}
+                  onChange={(e) => handleUpdate({ innerShadowDistance: parseInt(e.target.value) })}
+                  className="w-full accent-indigo-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Shadow Softness</span>
+                  <span className="font-mono">{styleConfig.innerShadowBlur ?? 20}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={styleConfig.innerShadowBlur ?? 20}
+                  onChange={(e) => handleUpdate({ innerShadowBlur: parseInt(e.target.value) })}
+                  className="w-full accent-indigo-500"
+                />
+              </div>
+
+              <CustomColorPicker 
+                label="Shadow Color"
+                value={styleConfig.innerShadowColor ?? '#000000'}
+                onChange={(c) => handleUpdate({ innerShadowColor: c })}
+                savedColors={customColors}
+                onSave={addCustomColor}
+                onRemove={removeCustomColor}
+              />
+            </div>
+          )}
+        </div>
+      
+
