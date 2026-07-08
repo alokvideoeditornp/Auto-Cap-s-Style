@@ -15,7 +15,7 @@ export type CaptionSegment = {
 
 export type AspectRatio = '9:16' | '16:9';
 export type CaptionPosition = 'lower-third' | 'center' | 'top';
-export type AnimationType = 'none' | 'slide-up' | 'pop' | 'fade' | 'typewriter' | 'elastic-bounce' | 'kinetic-clash' | 'chaos-converge';
+export type AnimationType = 'none' | 'slide-up' | 'pop' | 'fade' | 'typewriter' | 'elastic-bounce' | 'kinetic-clash' | 'chaos-converge' | '3-way-slide';
 export type DisplayMode = 'line' | 'word' | 'letter' | 'karaoke';
 export type TextAlign = 'left' | 'center' | 'right';
 export type HighlightStyle = 'none' | 'subtitle' | 'glow' | 'highlight' | 'underline';
@@ -67,6 +67,7 @@ export interface StyleConfig {
   innerShadowOnHighlight: boolean;
   innerShadowOnUnderlay: boolean;
   activePreset?: string;
+  wordSpacing?: number;
 }
 
 export interface CustomPreset {
@@ -142,6 +143,7 @@ export const defaultStyle: StyleConfig = {
   lineLayout: 'auto',
   wrapText: true,
   clipText: false,
+  wordSpacing: 8,
   textBoxWidth: 96,
   textBoxHeight: 20,
   staggerSpeedMode: 'auto',

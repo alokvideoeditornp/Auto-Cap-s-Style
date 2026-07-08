@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useProjectStore, StyleConfig, defaultStyle } from '@/store/useProjectStore';
-import { PaintBucket, Type, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight, Check, Trash2, Plus, Download, Upload, Square } from 'lucide-react';
+import { PaintBucket, Type, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight, Check, Trash2, Plus, Download, Upload, Square, RotateCcw } from 'lucide-react';
 
 const AccordionItem = ({ title, children, isOpen, onToggle }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void }) => {
   return (
@@ -36,6 +36,17 @@ const CustomPreview = ({ config }: { config: Partial<StyleConfig> }) => {
 };
 
 const PRESETS: { name: string; config: Partial<StyleConfig>; preview: React.ReactNode }[] = [
+  {
+    name: '3-Way Slide',
+    config: {
+      font: 'Montserrat', baseColor: '#ffffff', accentColor: '#FFD400', fontSize: 130, baseFontSizeMultiplier: 0.7, accentFontSizeMultiplier: 1.2, animationType: '3-way-slide', displayMode: 'word', highlightStyle: 'none'
+    },
+    preview: (
+      <span style={{ fontFamily: 'Montserrat', color: '#ffffff', fontSize: '12px', fontWeight: 800 }}>
+        3-WAY <span style={{ color: '#FFD400', fontSize: '1.2em' }}>SLIDE</span>
+      </span>
+    )
+  },
   {
     name: 'Classic Reels',
     config: {
@@ -866,9 +877,14 @@ export const StylePanel = () => {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium flex justify-between">
+          <label className="text-sm text-gray-400 font-medium flex justify-between items-center">
             <span>Base Font Size</span>
-            <span className="text-indigo-400">{styleConfig.fontSize}px</span>
+            <div className="flex items-center gap-2">
+              <span className="text-indigo-400">{styleConfig.fontSize}px</span>
+              <button onClick={() => handleUpdate({ fontSize: defaultStyle.fontSize })} className="text-gray-500 hover:text-white" title="Reset to default">
+                <RotateCcw size={14} />
+              </button>
+            </div>
           </label>
           <input 
             type="range" 
@@ -881,9 +897,14 @@ export const StylePanel = () => {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium flex justify-between">
+          <label className="text-sm text-gray-400 font-medium flex justify-between items-center">
             <span>Small Font Size Multiplier</span>
-            <span className="text-indigo-400">{styleConfig.baseFontSizeMultiplier}x</span>
+            <div className="flex items-center gap-2">
+              <span className="text-indigo-400">{styleConfig.baseFontSizeMultiplier}x</span>
+              <button onClick={() => handleUpdate({ baseFontSizeMultiplier: defaultStyle.baseFontSizeMultiplier })} className="text-gray-500 hover:text-white" title="Reset to default">
+                <RotateCcw size={14} />
+              </button>
+            </div>
           </label>
           <input 
             type="range" 
@@ -897,9 +918,14 @@ export const StylePanel = () => {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium flex justify-between">
+          <label className="text-sm text-gray-400 font-medium flex justify-between items-center">
             <span>Highlight Size Multiplier</span>
-            <span className="text-indigo-400">{styleConfig.accentFontSizeMultiplier}x</span>
+            <div className="flex items-center gap-2">
+              <span className="text-indigo-400">{styleConfig.accentFontSizeMultiplier}x</span>
+              <button onClick={() => handleUpdate({ accentFontSizeMultiplier: defaultStyle.accentFontSizeMultiplier })} className="text-gray-500 hover:text-white" title="Reset to default">
+                <RotateCcw size={14} />
+              </button>
+            </div>
           </label>
           <input 
             type="range" 
@@ -913,9 +939,14 @@ export const StylePanel = () => {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium flex justify-between">
+          <label className="text-sm text-gray-400 font-medium flex justify-between items-center">
             <span>Line Spacing</span>
-            <span className="text-indigo-400">{styleConfig.lineSpacing ?? 1.1}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-indigo-400">{styleConfig.lineSpacing ?? 1.1}</span>
+              <button onClick={() => handleUpdate({ lineSpacing: defaultStyle.lineSpacing ?? 1.1 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                <RotateCcw size={14} />
+              </button>
+            </div>
           </label>
           <input 
             type="range" 
@@ -924,6 +955,27 @@ export const StylePanel = () => {
             step="0.1"
             value={styleConfig.lineSpacing ?? 1.1}
             onChange={(e) => handleUpdate({ lineSpacing: parseFloat(e.target.value) })}
+            className="w-full accent-indigo-500"
+          />
+        </div>
+
+        <div className="flex flex-col gap-2 mt-2">
+          <label className="text-sm text-gray-400 font-medium flex justify-between items-center">
+            <span>Word Spacing</span>
+            <div className="flex items-center gap-2">
+              <span className="text-indigo-400">{styleConfig.wordSpacing ?? 8}px</span>
+              <button onClick={() => handleUpdate({ wordSpacing: defaultStyle.wordSpacing ?? 8 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                <RotateCcw size={14} />
+              </button>
+            </div>
+          </label>
+          <input 
+            type="range" 
+            min="0" 
+            max="100" 
+            step="1"
+            value={styleConfig.wordSpacing ?? 8}
+            onChange={(e) => handleUpdate({ wordSpacing: parseInt(e.target.value) })}
             className="w-full accent-indigo-500"
           />
         </div>
@@ -975,9 +1027,14 @@ export const StylePanel = () => {
           </div>
           {styleConfig.highlightStyle === 'glow' && (
             <div className="flex flex-col gap-2 mt-2">
-              <label className="text-xs text-gray-400 flex justify-between">
+              <label className="text-xs text-gray-400 flex justify-between items-center">
                 <span>Glow Intensity</span>
-                <span className="text-indigo-400">{styleConfig.glowIntensity ?? 3}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-indigo-400">{styleConfig.glowIntensity ?? 3}</span>
+                  <button onClick={() => handleUpdate({ glowIntensity: defaultStyle.glowIntensity ?? 3 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                    <RotateCcw size={12} />
+                  </button>
+                </div>
               </label>
               <input 
                 type="range" min="1" max="50" 
@@ -1043,9 +1100,14 @@ export const StylePanel = () => {
 
             {(styleConfig.clipText || (styleConfig.wrapText ?? true)) && (
               <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-gray-700">
-                <label className="text-xs text-gray-400 flex justify-between">
+                <label className="text-xs text-gray-400 flex justify-between items-center">
                   <span>Box Width</span>
-                  <span>{styleConfig.textBoxWidth ?? 96}%</span>
+                  <div className="flex items-center gap-2">
+                    <span>{styleConfig.textBoxWidth ?? 96}%</span>
+                    <button onClick={() => handleUpdate({ textBoxWidth: defaultStyle.textBoxWidth ?? 96 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                      <RotateCcw size={12} />
+                    </button>
+                  </div>
                 </label>
                 <input 
                   type="range" min="10" max="100" 
@@ -1056,9 +1118,14 @@ export const StylePanel = () => {
 
                 {styleConfig.clipText && (
                   <>
-                    <label className="text-xs text-gray-400 flex justify-between">
+                    <label className="text-xs text-gray-400 flex justify-between items-center">
                       <span>Box Height</span>
-                      <span>{styleConfig.textBoxHeight ?? 20}%</span>
+                      <div className="flex items-center gap-2">
+                        <span>{styleConfig.textBoxHeight ?? 20}%</span>
+                        <button onClick={() => handleUpdate({ textBoxHeight: defaultStyle.textBoxHeight ?? 20 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                          <RotateCcw size={12} />
+                        </button>
+                      </div>
                     </label>
                     <input 
                       type="range" min="5" max="100" 
@@ -1150,7 +1217,7 @@ export const StylePanel = () => {
         <div className="flex flex-col gap-2">
           <label className="text-sm text-gray-400 font-medium">Entrance Animation</label>
           <div className="grid grid-cols-2 gap-2">
-            {(['none', 'slide-up', 'pop', 'fade', 'typewriter', 'elastic-bounce', 'kinetic-clash', 'chaos-converge'] as const).map((type) => (
+            {(['none', 'slide-up', 'pop', 'fade', 'typewriter', 'elastic-bounce', 'kinetic-clash', 'chaos-converge', '3-way-slide'] as const).map((type) => (
               <button
                 key={type}
                 onClick={() => handleUpdate({ animationType: type })}
@@ -1166,7 +1233,8 @@ export const StylePanel = () => {
                  type === 'fade' ? 'Fade' : 
                  type === 'elastic-bounce' ? 'Elastic Bounce' : 
                  type === 'kinetic-clash' ? 'Kinetic Clash' :
-                 type === 'chaos-converge' ? 'Chaos Converge' : 'Typewriter'}
+                 type === 'chaos-converge' ? 'Chaos Converge' : 
+                 type === '3-way-slide' ? '3-Way Slide' : 'Typewriter'}
               </button>
             ))}
           </div>
@@ -1200,7 +1268,12 @@ export const StylePanel = () => {
             <div className="mt-2 flex flex-col gap-1">
               <div className="flex justify-between items-center text-xs text-gray-500">
                 <span>Intensity</span>
-                <span className="font-mono">{styleConfig.motionBlurIntensity ?? 15}px</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono">{styleConfig.motionBlurIntensity ?? 15}px</span>
+                  <button onClick={() => handleUpdate({ motionBlurIntensity: defaultStyle.motionBlurIntensity ?? 15 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                    <RotateCcw size={12} />
+                  </button>
+                </div>
               </div>
               <input
                 type="range"
@@ -1264,7 +1337,12 @@ export const StylePanel = () => {
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Opacity</span>
-                  <span className="font-mono">{styleConfig.dropShadowIntensity ?? 50}%</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{styleConfig.dropShadowIntensity ?? 50}%</span>
+                    <button onClick={() => handleUpdate({ dropShadowIntensity: defaultStyle.dropShadowIntensity ?? 50 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                      <RotateCcw size={12} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -1280,7 +1358,12 @@ export const StylePanel = () => {
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Angle</span>
-                  <span className="font-mono">{styleConfig.dropShadowAngle ?? 45}&deg;</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{styleConfig.dropShadowAngle ?? 45}&deg;</span>
+                    <button onClick={() => handleUpdate({ dropShadowAngle: defaultStyle.dropShadowAngle ?? 45 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                      <RotateCcw size={12} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -1296,7 +1379,12 @@ export const StylePanel = () => {
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Distance</span>
-                  <span className="font-mono">{styleConfig.dropShadowDistance ?? 15}%</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{styleConfig.dropShadowDistance ?? 15}%</span>
+                    <button onClick={() => handleUpdate({ dropShadowDistance: defaultStyle.dropShadowDistance ?? 15 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                      <RotateCcw size={12} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -1312,7 +1400,12 @@ export const StylePanel = () => {
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Softness</span>
-                  <span className="font-mono">{styleConfig.dropShadowBlur ?? 20}%</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{styleConfig.dropShadowBlur ?? 20}%</span>
+                    <button onClick={() => handleUpdate({ dropShadowBlur: defaultStyle.dropShadowBlur ?? 20 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                      <RotateCcw size={12} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -1386,7 +1479,12 @@ export const StylePanel = () => {
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Opacity</span>
-                  <span className="font-mono">{styleConfig.innerShadowIntensity ?? 50}%</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{styleConfig.innerShadowIntensity ?? 50}%</span>
+                    <button onClick={() => handleUpdate({ innerShadowIntensity: defaultStyle.innerShadowIntensity ?? 50 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                      <RotateCcw size={12} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -1402,7 +1500,12 @@ export const StylePanel = () => {
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Angle</span>
-                  <span className="font-mono">{styleConfig.innerShadowAngle ?? 45}&deg;</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{styleConfig.innerShadowAngle ?? 45}&deg;</span>
+                    <button onClick={() => handleUpdate({ innerShadowAngle: defaultStyle.innerShadowAngle ?? 45 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                      <RotateCcw size={12} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -1418,7 +1521,12 @@ export const StylePanel = () => {
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Distance</span>
-                  <span className="font-mono">{styleConfig.innerShadowDistance ?? 15}%</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{styleConfig.innerShadowDistance ?? 15}%</span>
+                    <button onClick={() => handleUpdate({ innerShadowDistance: defaultStyle.innerShadowDistance ?? 15 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                      <RotateCcw size={12} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"
@@ -1434,7 +1542,12 @@ export const StylePanel = () => {
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Softness</span>
-                  <span className="font-mono">{styleConfig.innerShadowBlur ?? 20}%</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{styleConfig.innerShadowBlur ?? 20}%</span>
+                    <button onClick={() => handleUpdate({ innerShadowBlur: defaultStyle.innerShadowBlur ?? 20 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                      <RotateCcw size={12} />
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="range"

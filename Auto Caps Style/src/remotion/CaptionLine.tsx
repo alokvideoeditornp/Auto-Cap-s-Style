@@ -82,72 +82,113 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
   const contentRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
-    if (!containerRef.current || !contentRef.current) return;
-    
-    const container = containerRef.current;
-    const content = contentRef.current;
-    
-    // Reset container height and content transform to measure true size
-    container.style.height = (styleConfig.clipText ?? false) ? `${styleConfig.textBoxHeight ?? 20}%` : 'auto';
-    content.style.transform = 'none';
-    
-    // Temporarily align left to accurately measure scrollWidth without left-overflow truncation
-    const originalJustifyContent = content.style.justifyContent;
-    const originalTextAlign = content.style.textAlign;
-    content.style.justifyContent = 'flex-start';
-    content.style.textAlign = 'left';
-    
-    // Strip transforms from animated children to get true layout size
-    const childrenSpans = Array.from(content.querySelectorAll('span'));
-    const originalTransforms = childrenSpans.map(child => (child as HTMLElement).style.transform);
-    childrenSpans.forEach(child => (child as HTMLElement).style.transform = 'none');
-
-    const containerW = container.clientWidth;
-    const contentW = content.scrollWidth;
-    
-    // Always restrict height to the container's max available height so it scales down if it overflows the canvas
-    const containerH = container.clientHeight;
-    const contentH = content.scrollHeight;
-    
-    // Restore children transforms
-    childrenSpans.forEach((child, i) => (child as HTMLElement).style.transform = originalTransforms[i]);
-
-    // Restore alignment
-    content.style.justifyContent = originalJustifyContent;
-    content.style.textAlign = originalTextAlign;
-    
-    let scale = 1;
-    const isOut = false;
-    
-    if (contentW > containerW || contentH > containerH) {
-      const scaleX = containerW / contentW;
-      const scaleY = containerH / contentH;
+    const calculateScale = () => {
+      if (!containerRef.current || !contentRef.current) return;
       
-      // We ONLY scale down to fit. Never scale up above 1.
-      scale = Math.min(scaleX, scaleY, 1);
+      const container = containerRef.current;
+      const content = contentRef.current;
       
-      // Small buffer to ensure no pixel clipping if we actually scaled
-      if (scale < 1) {
-        scale = scale * 0.98;
+      // Reset container height and content transform to measure true size
+      container.style.height = (styleConfig.clipText ?? false) ? `${styleConfig.textBoxHeight ?? 20}%` : 'auto';
+      content.style.transform = 'none';
+      
+      // Temporarily align left to accurately measure scrollWidth without left-overflow truncation
+      const originalJustifyContent = content.style.justifyContent;
+      const originalTextAlign = content.style.textAlign;
+      content.style.justifyContent = 'flex-start';
+      content.style.textAlign = 'left';
+      
+      // Also reset any inner rows that might have center/right alignment causing left-overflow
+      const layoutRows = Array.from(content.querySelectorAll('.caption-layout-row')) as HTMLElement[];
+      const originalRowJustify = layoutRows.map(row => row.style.justifyContent);
+      layoutRows.forEach(row => row.style.justifyContent = 'flex-start');
+      
+      // Strip transforms from animated children to get true layout size
+      const childrenSpans = Array.from(content.querySelectorAll('span'));
+      const originalTransforms = childrenSpans.map(child => (child as HTMLElement).style.transform);
+      childrenSpans.forEach(child => (child as HTMLElement).style.transform = 'none');
+
+      const containerW = container.clientWidth;
+      const contentW = content.scrollWidth;
+      
+      // Always restrict height to the container's max available height so it scales down if it overflows the canvas
+      const containerH = container.clientHeight;
+      const contentH = content.scrollHeight;
+      
+      // Restore children transforms
+      childrenSpans.forEach((child, i) => (child as HTMLElement).style.transform = originalTransforms[i]);
+
+      // Restore alignment
+      content.style.justifyContent = originalJustifyContent;
+      content.style.textAlign = originalTextAlign;
+      layoutRows.forEach((row, i) => row.style.justifyContent = originalRowJustify[i]);
+      
+      let scale = 1;
+      
+      if (contentW > containerW || contentH > containerH) {
+        const scaleX = containerW / contentW;
+        const scaleY = containerH / contentH;
+        
+        // We ONLY scale down to fit. Never scale up above 1.
+        scale = Math.min(scaleX, scaleY, 1);
+        
+        // Small buffer to ensure no pixel clipping if we actually scaled
+        if (scale < 1) {
+          scale = scale * 0.98;
+        }
+        // Round scale to 3 decimal places to prevent layout jitter across headless renderer frames
+        scale = Math.floor(scale * 1000) / 1000;
       }
-      // Round scale to 3 decimal places to prevent layout jitter across headless renderer frames
-      scale = Math.floor(scale * 1000) / 1000;
+      
+      useProjectStore.getState().setIsCaptionOutOfBounds(false);
+      
+      let transformOrigin = 'center center';
+      if (styleConfig.textAlign === 'left') transformOrigin = 'left center';
+      if (styleConfig.textAlign === 'right') transformOrigin = 'right center';
+      
+      content.style.transform = `scale(${scale})`;
+      content.style.transformOrigin = transformOrigin;
+      
+      // Adjust container height to match scaled content to prevent empty vertical space
+      if (!styleConfig.clipText && scale < 1) {
+        container.style.height = `${contentH * scale}px`;
+      }
+    };
+
+    calculateScale();
+    
+    // Recalculate if fonts finish loading asynchronously (especially in browser player)
+    let isMounted = true;
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      document.fonts.ready.then(() => {
+        if (isMounted) calculateScale();
+      });
     }
     
-    useProjectStore.getState().setIsCaptionOutOfBounds(false);
-    
-    let transformOrigin = 'center center';
-    if (styleConfig.textAlign === 'left') transformOrigin = 'left center';
-    if (styleConfig.textAlign === 'right') transformOrigin = 'right center';
-    
-    content.style.transform = `scale(${scale})`;
-    content.style.transformOrigin = transformOrigin;
-    
-    // Adjust container height to match scaled content to prevent empty vertical space
-    if (!styleConfig.clipText && scale < 1) {
-      container.style.height = `${contentH * scale}px`;
-    }
-  }, [words, styleConfig.clipText, styleConfig.textBoxWidth, styleConfig.textBoxHeight, styleConfig.fontSize, styleConfig.wrapText, styleConfig.lineLayout, styleConfig.baseFontSizeMultiplier, styleConfig.accentFontSizeMultiplier, styleConfig.textAlign]);
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    words, 
+    styleConfig.clipText, 
+    styleConfig.textBoxWidth, 
+    styleConfig.textBoxHeight, 
+    styleConfig.fontSize, 
+    styleConfig.wrapText, 
+    styleConfig.lineLayout, 
+    styleConfig.baseFontSizeMultiplier, 
+    styleConfig.accentFontSizeMultiplier, 
+    styleConfig.textAlign,
+    styleConfig.font,
+    styleConfig.highlightFont,
+    styleConfig.enableHighlightFont,
+    styleConfig.fontWeight,
+    styleConfig.highlightFontWeight,
+    styleConfig.animationType,
+    styleConfig.displayMode,
+    styleConfig.highlightStyle,
+    styleConfig.wordSpacing
+  ]);
 
   const renderContent = () => {
     let itemIndex = 0; // global counter for letters if in letter mode
@@ -155,7 +196,18 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
     // For math stagger
     const totalChars = words.reduce((sum, w) => sum + w.length, 0);
 
+    const firstHighlightedIndex = (segment.highlightedIndices || []).length > 0 
+      ? Math.min(...segment.highlightedIndices!) 
+      : words.findIndex(w => (segment.highlightedWords || []).some(hw => hw.toLowerCase() === w.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim()));
+      
+    const lastHighlightedIndex = (segment.highlightedIndices || []).length > 0 
+      ? Math.max(...segment.highlightedIndices!) 
+      : words.findLastIndex(w => (segment.highlightedWords || []).some(hw => hw.toLowerCase() === w.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim()));
+
     const elements = words.map((word, wIdx) => {
+      let highlightStatus: 'past' | 'current' | 'future' = 'current';
+      if (firstHighlightedIndex !== -1 && wIdx < firstHighlightedIndex) highlightStatus = 'past';
+      else if (lastHighlightedIndex !== -1 && wIdx > lastHighlightedIndex) highlightStatus = 'future';
       const cleanWord = word.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim();
       
       let isHighlighted = false;
@@ -202,7 +254,8 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         : (styleConfig.fontWeight ?? 800);
 
       const verticalMargin = ((styleConfig.lineSpacing ?? 1.1) - 1.1) * 0.5;
-      const wordStyles: React.CSSProperties = { margin: `${verticalMargin}em 8px`, display: 'inline-block', whiteSpace: 'nowrap' };
+      const isWhitespace = word.trim() === '';
+      const currentWordStyles: React.CSSProperties = { margin: `${verticalMargin}em ${styleConfig.wordSpacing ?? 8}px`, display: isWhitespace ? 'none' : 'inline-block', whiteSpace: 'nowrap' };
 
       if (styleConfig.displayMode === 'letter') {
         let letters: string[] = [];
@@ -214,7 +267,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         }
         // We use a flex row so letters stay together like a word
         return (
-          <span key={wIdx} style={wordStyles}>
+          <span key={wIdx} style={currentWordStyles}>
             {letters.map((char, cIdx) => {
               const currentItemIndex = itemIndex++;
               return (
@@ -229,6 +282,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
                   color={color}
                   fontSize={fontSize}
                   isHighlighted={isHighlighted}
+                  highlightStatus={highlightStatus}
                   index={currentItemIndex}
                   fontFamily={fontFamily}
                   fontWeight={fontWeight as any}
@@ -259,7 +313,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       }
       
       return (
-        <span key={wIdx} style={wordStyles}>
+        <span key={wIdx} style={currentWordStyles}>
           <AnimatedItem
             char={word}
             frame={frame}
@@ -270,6 +324,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
             color={color}
             fontSize={fontSize}
             isHighlighted={isHighlighted}
+            highlightStatus={highlightStatus}
             index={wIdx}
             fontFamily={fontFamily}
             fontWeight={fontWeight as any}
@@ -281,6 +336,44 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         </span>
       );
     });
+
+    if (styleConfig.animationType === '3-way-slide') {
+      const pastElements: React.ReactNode[] = [];
+      const currentElements: React.ReactNode[] = [];
+      const futureElements: React.ReactNode[] = [];
+
+      words.forEach((word, wIdx) => {
+        let highlightStatus: 'past' | 'current' | 'future' = 'current';
+        if (firstHighlightedIndex !== -1 && wIdx < firstHighlightedIndex) highlightStatus = 'past';
+        else if (lastHighlightedIndex !== -1 && wIdx > lastHighlightedIndex) highlightStatus = 'future';
+        
+        if (highlightStatus === 'past') pastElements.push(elements[wIdx]);
+        else if (highlightStatus === 'current') currentElements.push(elements[wIdx]);
+        else futureElements.push(elements[wIdx]);
+      });
+
+      const shouldWrap = (styleConfig.wrapText ?? true) && styleConfig.lineLayout !== 'single';
+      
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'stretch' }}>
+          {pastElements.length > 0 && (
+            <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: shouldWrap ? 'wrap' : 'nowrap', justifyContent: 'flex-start', alignItems: 'baseline' }}>
+              {pastElements}
+            </div>
+          )}
+          {currentElements.length > 0 && (
+            <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: shouldWrap ? 'wrap' : 'nowrap', justifyContent: 'center', alignItems: 'baseline' }}>
+              {currentElements}
+            </div>
+          )}
+          {futureElements.length > 0 && (
+            <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: shouldWrap ? 'wrap' : 'nowrap', justifyContent: 'flex-end', alignItems: 'baseline' }}>
+              {futureElements}
+            </div>
+          )}
+        </div>
+      );
+    }
 
     if (styleConfig.lineLayout === 'double' && elements.length > 1) {
       const half = Math.ceil(elements.length / 2);
@@ -362,6 +455,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
           textAlign: styleConfig.textAlign ?? 'center',
           whiteSpace: (styleConfig.wrapText ?? true) && styleConfig.lineLayout !== 'single' ? 'normal' : 'nowrap',
           width: (styleConfig.highlightStyle === 'subtitle' || styleConfig.lineLayout === 'single' || styleConfig.lineLayout === 'double') ? 'max-content' : '100%',
+          minWidth: styleConfig.animationType === '3-way-slide' ? 'min-content' : undefined,
           lineHeight: styleConfig.lineSpacing ?? 1.1,
           backgroundColor: styleConfig.highlightStyle === 'subtitle' ? (styleConfig.backgroundColor || '#000000') : 'transparent',
           padding: styleConfig.highlightStyle === 'subtitle' ? '0.2em 0.4em' : '0',
@@ -392,7 +486,8 @@ const AnimatedItem: React.FC<{
   isRendering?: boolean;
   durationInFrames: number;
   scaleMultiplier?: number;
-}> = ({ char, frame, fps, delay, styleConfig, exitProgress, color, fontSize, isHighlighted, index, fontFamily, fontWeight, isFirstCaption, isRendering, durationInFrames, scaleMultiplier = 1 }) => {
+  highlightStatus?: 'past' | 'current' | 'future';
+}> = ({ char, frame, fps, delay, styleConfig, exitProgress, color, fontSize, isHighlighted, index, fontFamily, fontWeight, isFirstCaption, isRendering, durationInFrames, scaleMultiplier = 1, highlightStatus = 'current' }) => {
   const defaultEntranceFrames = Math.round((300 / 1000) * fps); // 300ms
   const maxEntranceFrames = Math.max(1, durationInFrames - delay);
   const entranceDurationFrames = Math.min(defaultEntranceFrames, maxEntranceFrames);
@@ -502,6 +597,20 @@ const AnimatedItem: React.FC<{
     rotate = interpolate(entranceProgress, [0, 1], [startRot, 0]);
     scale = interpolate(exitProgress, [0, 1], [1, 0.5]);
     opacity = interpolate(entranceProgress, [0, 0.5, 1], [0, 1, 1]) - interpolate(exitProgress, [0, 1], [0, 1]);
+  } else if (styleConfig.animationType === '3-way-slide') {
+    if (highlightStatus === 'past') {
+      translateX = interpolate(entranceProgress, [0, 1], [-100, 0], { extrapolateLeft: 'clamp' });
+    } else if (highlightStatus === 'future') {
+      translateX = interpolate(entranceProgress, [0, 1], [100, 0], { extrapolateLeft: 'clamp' });
+    } else {
+      translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateLeft: 'clamp' });
+    }
+    
+    translateX += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'past' ? -100 : highlightStatus === 'future' ? 100 : 0], { extrapolateLeft: 'clamp' });
+    translateY += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'current' ? 50 : 0], { extrapolateLeft: 'clamp' });
+    
+    opacity = interpolate(entranceProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - 
+              interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'typewriter') {
     opacity = relativeFrame > 0 ? 1 : 0;
     opacity = opacity - interpolate(exitProgress, [0, 1], [0, 1]);
