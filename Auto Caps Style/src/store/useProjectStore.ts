@@ -81,6 +81,7 @@ interface ProjectState {
   videoUrl: string | null;
   videoDuration: number;
   fps: number;
+  projectName: string | null;
   captions: CaptionSegment[];
   styleConfig: StyleConfig;
   
@@ -100,6 +101,7 @@ interface ProjectState {
   setHighlightSimilar: (highlight: boolean) => void;
 
   setVideoData: (url: string, duration: number, fps: number) => void;
+  setProjectName: (name: string) => void;
   setCaptions: (captions: CaptionSegment[]) => void;
   updateCaptionSegment: (id: string, updates: Partial<CaptionSegment>) => void;
   setStyleConfig: (config: Partial<StyleConfig>) => void;
@@ -177,6 +179,7 @@ export const useProjectStore = create<ProjectState>()(
       videoUrl: null,
   videoDuration: 0,
   fps: 30,
+  projectName: null,
   captions: [],
   styleConfig: defaultStyle,
   individualStylingEnabled: false,
@@ -192,6 +195,7 @@ export const useProjectStore = create<ProjectState>()(
   setHighlightSimilar: (highlight) => set({ highlightSimilar: highlight }),
 
   setVideoData: (url, duration, fps) => set({ videoUrl: url, videoDuration: duration, fps }),
+  setProjectName: (name) => set({ projectName: name }),
   
   setCaptions: (captions) => set((state) => {
     // Only save history if we already had captions

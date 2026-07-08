@@ -1483,7 +1483,7 @@ export const StylePanel = () => {
         </div>,
         document.body
       )}
-
+  
       {showResetModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black/60 z-[99999] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowResetModal(false)}>
           <div className="bg-gray-800 border border-gray-700 p-5 rounded-xl max-w-sm w-full shadow-2xl flex flex-col gap-3" onClick={e => e.stopPropagation()}>

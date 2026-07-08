@@ -10,8 +10,9 @@ import { StylePanel } from './StylePanel';
 import { Undo, Redo, Wand2, Repeat, RefreshCcw, Edit2, Check, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, AlertTriangle, BookOpen } from 'lucide-react';
 
 export const Editor: React.FC = () => {
-  const { videoUrl, captions, styleConfig, fps, videoDuration, undo, redo, pastCaptions, futureCaptions, individualStylingEnabled, selectedCaptionId, isCaptionOutOfBounds, hasHydrated } = useProjectStore();
+  const { videoUrl, captions, styleConfig, fps, videoDuration, undo, redo, pastCaptions, futureCaptions, individualStylingEnabled, selectedCaptionId, isCaptionOutOfBounds, hasHydrated, projectName } = useProjectStore();
   const setVideoData = useProjectStore((state) => state.setVideoData);
+  const setProjectName = useProjectStore((state) => state.setProjectName);
   const setCaptions = useProjectStore((state) => state.setCaptions);
   const updateCaptionSegment = useProjectStore((state) => state.updateCaptionSegment);
   const setIndividualStylingEnabled = useProjectStore((state) => state.setIndividualStylingEnabled);
@@ -25,10 +26,19 @@ export const Editor: React.FC = () => {
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isMemoryBoxOpen, setIsMemoryBoxOpen] = useState(false);
   
-  // Hydration state for rendering safely
   const [mounted, setMounted] = useState(false);
+  const [storageWarning, setStorageWarning] = useState<{ show: boolean; sizeGB: number }>({ show: false, sizeGB: 0 });
+
   useEffect(() => {
     setMounted(true);
+    fetch('/api/storage')
+      .then(res => res.json())
+      .then(data => {
+        if (data.sizeGB > 10) {
+          setStorageWarning({ show: true, sizeGB: data.sizeGB });
+        }
+      })
+      .catch(err => console.error('Failed to fetch storage size:', err));
   }, []);
 
   const toggleHighlight = (captionId: string, word: string, wordIndex: number) => {
@@ -36,7 +46,7 @@ export const Editor: React.FC = () => {
     if (!caption) return;
     
     // Clean punctuation for matching but store the clean version
-    const cleanWord = word.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
+    const cleanWord = word.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim();
     
     if (highlightSimilar) {
       let isCurrentlyHighlighted = false;
@@ -53,7 +63,7 @@ export const Editor: React.FC = () => {
           capCurrentIndices = [];
           const wordsArr = cap.text.split(' ');
           wordsArr.forEach((w, i) => {
-            const cw = w.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
+            const cw = w.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim();
             if (cap.highlightedWords.some(hw => hw.toLowerCase() === cw)) {
               capCurrentIndices!.push(i);
             }
@@ -67,7 +77,7 @@ export const Editor: React.FC = () => {
           newHighlights = newHighlights.filter(w => w.toLowerCase() !== cleanWord);
           const wordsArr = cap.text.split(' ');
           wordsArr.forEach((w, i) => {
-            if (w.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim() === cleanWord) {
+            if (w.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim() === cleanWord) {
               newHighlightIndices = newHighlightIndices.filter(idx => idx !== i);
             }
           });
@@ -75,7 +85,7 @@ export const Editor: React.FC = () => {
           newHighlights.push(cleanWord);
           const wordsArr = cap.text.split(' ');
           wordsArr.forEach((w, i) => {
-            if (w.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim() === cleanWord && !newHighlightIndices.includes(i)) {
+            if (w.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim() === cleanWord && !newHighlightIndices.includes(i)) {
               newHighlightIndices.push(i);
             }
           });
@@ -92,7 +102,7 @@ export const Editor: React.FC = () => {
         currentIndices = [];
         const wordsArr = caption.text.split(' ');
         wordsArr.forEach((w, i) => {
-          const cw = w.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
+          const cw = w.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim();
           if (caption.highlightedWords.some(hw => hw.toLowerCase() === cw)) {
             currentIndices!.push(i);
           }
@@ -106,7 +116,7 @@ export const Editor: React.FC = () => {
         newHighlightIndices = newHighlightIndices.filter(idx => idx !== wordIndex);
         // Optional: remove from newHighlights if no more indices of this word exist
         const wordsArr = caption.text.split(' ');
-        const hasMoreOfThisWord = newHighlightIndices.some(idx => wordsArr[idx].replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim() === cleanWord);
+        const hasMoreOfThisWord = newHighlightIndices.some(idx => wordsArr[idx].replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim() === cleanWord);
         if (!hasMoreOfThisWord) {
           newHighlights = newHighlights.filter(w => w.toLowerCase() !== cleanWord);
         }
@@ -152,7 +162,7 @@ export const Editor: React.FC = () => {
         }
       });
       
-      const cleanImportant = bestWord.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
+      const cleanImportant = bestWord.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim();
       let bestIndex = -1;
       words.forEach((w, i) => {
         if (w === bestWord && bestIndex === -1) {
@@ -203,6 +213,10 @@ export const Editor: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('autoLoad') === 'true') {
       const fpsParam = urlParams.get('fps');
+      const projParam = urlParams.get('projectName');
+      if (projParam) {
+        setProjectName(projParam);
+      }
       if (fpsParam) {
         setVideoData(videoUrl || '', videoDuration || 0, parseFloat(fpsParam));
       }
@@ -214,7 +228,7 @@ export const Editor: React.FC = () => {
   
   let durationInFrames = 300; // Default 10 seconds
   if (videoDuration > 0) {
-    durationInFrames = Math.max(1, Math.round((videoDuration / 1000) * fps));
+    durationInFrames = Math.max(1, Math.round((Math.max(videoDuration, maxCanvasTime) / 1000) * fps));
   } else if (maxCanvasTime > 0) {
     durationInFrames = Math.max(1, Math.round((maxCanvasTime / 1000) * fps));
   }
@@ -274,6 +288,18 @@ export const Editor: React.FC = () => {
     setTimeout(() => setIsClient(true), 0);
   }, []);
 
+  const handleOpenFolder = async () => {
+    try {
+      await fetch('/api/open-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectName }),
+      });
+    } catch (err) {
+      console.error('Failed to open folder:', err);
+    }
+  };
+
   const handleRender = async () => {
     if (captions.length === 0) return;
     setIsRendering(true);
@@ -291,7 +317,8 @@ export const Editor: React.FC = () => {
             captions,
             styleConfig,
             fps
-          }
+          },
+          projectName: projectName || "Auto Cap's Style"
         })
       });
       const data = await res.json();
@@ -489,7 +516,7 @@ export const Editor: React.FC = () => {
                 ) : (
                   <p className="text-sm text-gray-200 leading-relaxed flex flex-wrap gap-1 mt-2">
                     {cap.text.split(' ').map((word, i) => {
-                    const cleanWord = word.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
+                    const cleanWord = word.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim();
                     const isHighlighted = cap.highlightedIndices 
                       ? cap.highlightedIndices.includes(i)
                       : cap.highlightedWords.some(w => w.toLowerCase() === cleanWord);
@@ -523,7 +550,7 @@ export const Editor: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-800">
+        <div className="p-4 border-t border-gray-800 space-y-2">
           <button 
             onClick={handleRender}
             disabled={captions.length === 0 || isRendering}
@@ -531,6 +558,14 @@ export const Editor: React.FC = () => {
           >
             {isRendering ? `Rendering... ${renderProgress}%` : 'Render Final Video'}
           </button>
+          
+          <button 
+            onClick={handleOpenFolder}
+            className="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition"
+          >
+            Open Renders Folder
+          </button>
+
           {downloadUrl && (
             <a
               href={downloadUrl}
@@ -658,7 +693,37 @@ export const Editor: React.FC = () => {
         </div>
       )}
 
-      {/* Memory Box Modal */}
+      {/* Storage Warning Modal */}
+      {storageWarning.show && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
+          <div className="bg-gray-800 border border-red-500/30 rounded-xl p-6 shadow-2xl max-w-md w-full mx-4 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-red-500/20 rounded-full flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white mb-2">Storage Warning</h3>
+                <p className="text-gray-300 text-sm mb-4 leading-relaxed">
+                  Your rendered videos have exceeded <span className="font-bold text-red-400">10 GB</span> of storage 
+                  (Currently using <span className="font-bold text-white">{storageWarning.sizeGB.toFixed(2)} GB</span>). 
+                  Consider deleting old renders from the <span className="bg-gray-900 px-1.5 py-0.5 rounded text-gray-400 font-mono">public/renders</span> folder to free up space.
+                </p>
+                <div className="flex justify-end">
+                  <button 
+                    onClick={() => setStorageWarning({ ...storageWarning, show: false })}
+                    className="px-5 py-2 rounded-lg text-sm font-medium bg-red-600/90 text-white hover:bg-red-500 transition shadow-lg shadow-red-900/20"
+                  >
+                    I Understand
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Right Sidebar: Video Preview, Memory Box, Export */}
       {isMemoryBoxOpen && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
@@ -701,7 +766,7 @@ export const Editor: React.FC = () => {
                   // Deduplicate using clean lowercase version, but keep original for display
                   const uniqueWordsMap = new Map<string, string>();
                   allWords.forEach(word => {
-                    const clean = word.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
+                    const clean = word.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim();
                     if (clean && !uniqueWordsMap.has(clean)) {
                       uniqueWordsMap.set(clean, word);
                     }
@@ -789,7 +854,10 @@ export const Editor: React.FC = () => {
 
       {/* Rendering Overlay */}
       {isRendering && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-[100] cursor-not-allowed">
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-[100] cursor-not-allowed"
+          onContextMenu={(e) => e.preventDefault()}
+        >
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500 mb-6"></div>
           <h2 className="text-3xl font-bold text-white mb-2">Rendering Video</h2>
           <p className="text-gray-300 text-lg mb-8">Please wait, do not close the plugin...</p>

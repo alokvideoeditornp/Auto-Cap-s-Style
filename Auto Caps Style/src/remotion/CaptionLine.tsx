@@ -130,6 +130,8 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       if (scale < 1) {
         scale = scale * 0.98;
       }
+      // Round scale to 3 decimal places to prevent layout jitter across headless renderer frames
+      scale = Math.floor(scale * 1000) / 1000;
     }
     
     useProjectStore.getState().setIsCaptionOutOfBounds(false);
@@ -154,7 +156,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
     const totalChars = words.reduce((sum, w) => sum + w.length, 0);
 
     const elements = words.map((word, wIdx) => {
-      const cleanWord = word.replace(/[.,!?;:"'(){}[\]\-]/g, '').toLowerCase().trim();
+      const cleanWord = word.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim();
       
       let isHighlighted = false;
       let karaokeStartFrame = 0;
@@ -439,8 +441,8 @@ const AnimatedItem: React.FC<{
   if (styleConfig.animationType === 'none') {
     opacity = 1; // No fade in, no fade out
   } else if (styleConfig.animationType === 'slide-up') {
-    translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) + 
-                 interpolate(exitProgress, [0, 1], [0, 50], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateLeft: 'clamp' }) + 
+                 interpolate(exitProgress, [0, 1], [0, 50], { extrapolateLeft: 'clamp' });
     opacity = interpolate(entranceProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - 
               interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'fade') {
@@ -453,7 +455,7 @@ const AnimatedItem: React.FC<{
       config: { damping: 10, mass: 0.5 },
       durationInFrames: entranceDurationFrames,
     });
-    translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateLeft: 'clamp' });
     opacity = interpolate(entranceProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - 
               interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'elastic-bounce') {
@@ -463,7 +465,7 @@ const AnimatedItem: React.FC<{
       config: { damping: 5, mass: 1, stiffness: 200 },
       durationInFrames: entranceDurationFrames * 2,
     });
-    translateY = interpolate(exitProgress, [0, 1], [0, 50], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    translateY = interpolate(exitProgress, [0, 1], [0, 50], { extrapolateLeft: 'clamp' });
     opacity = interpolate(entranceProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - 
               interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'kinetic-clash') {

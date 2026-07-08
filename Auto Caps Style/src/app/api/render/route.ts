@@ -8,7 +8,7 @@ const jobs: Record<string, { status: string; progress: number; url?: string; err
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    let { inputProps } = body;
+    let { inputProps, projectName } = body;
     inputProps = { ...inputProps, isRendering: true };
     
     const jobId = Math.random().toString(36).substring(7);
@@ -21,9 +21,23 @@ export async function POST(req: Request) {
     const propsPath = path.join(tempDir, `props-${jobId}.json`);
     fs.writeFileSync(propsPath, JSON.stringify(inputProps));
     
-    const outputLocation = path.resolve(process.cwd(), `public/renders/render-${jobId}.mov`);
-    const outputDir = path.dirname(outputLocation);
-    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+    // Sanitize project name to be safe for file paths
+    const safeProjectName = projectName ? projectName.replace(/[^a-z0-9 _-]/gi, '').trim() : '';
+    const baseDir = safeProjectName 
+      ? path.resolve(process.cwd(), 'public/renders', safeProjectName)
+      : path.resolve(process.cwd(), 'public/renders');
+      
+    if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir, { recursive: true });
+    
+    let fileName = `Cap's Vid.mov`;
+    let outputLocation = path.join(baseDir, fileName);
+    let counter = 1;
+    while (fs.existsSync(outputLocation)) {
+      const paddedCounter = counter.toString().padStart(2, '0');
+      fileName = `Cap's Vid_${paddedCounter}.mov`;
+      outputLocation = path.join(baseDir, fileName);
+      counter++;
+    }
 
     console.log(`[Job ${jobId}] Spawning Remotion CLI for ProRes 4444...`);
     
@@ -97,7 +111,7 @@ export async function POST(req: Request) {
         console.log(`[Job ${jobId}] Render complete!`);
         jobs[jobId].progress = 100;
         jobs[jobId].status = 'done';
-        jobs[jobId].url = `/renders/render-${jobId}.mov`;
+        jobs[jobId].url = safeProjectName ? `/renders/${safeProjectName}/${fileName}` : `/renders/${fileName}`;
       } else {
         console.error(`[Job ${jobId}] Render failed with code ${code}`);
         jobs[jobId].status = 'failed';

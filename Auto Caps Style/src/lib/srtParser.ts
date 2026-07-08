@@ -49,7 +49,7 @@ export const parseSrt = (srtContent: string): CaptionSegment[] => {
             }
           });
           
-          cleanImportant = bestWord.replace(/[.,!?;:"'(){}[\\]\\-]/g, '').toLowerCase().trim();
+          cleanImportant = bestWord.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim();
           words.forEach((w, i) => {
             if (w === bestWord && bestIndex === -1) {
               bestIndex = i;
