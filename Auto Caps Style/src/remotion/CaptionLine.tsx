@@ -26,7 +26,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
     ? interpolate(framesUntilEnd, [0, exitDurationFrames], [1, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })
     : 0;
 
-  const words = React.useMemo(() => segment.text.split(' '), [segment.text]);
+  const words = React.useMemo(() => segment.text.replace(/\n/g, ' \n ').split(' ').filter(w => w !== ''), [segment.text]);
 
   // Estimate number of lines based on layout and word count
   let estimatedLines = 1;
@@ -205,6 +205,9 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       : words.findLastIndex(w => (segment.highlightedWords || []).some(hw => hw.toLowerCase() === w.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim()));
 
     const elements = words.map((word, wIdx) => {
+      if (word === '\n') {
+        return <div key={`br-${wIdx}`} style={{ flexBasis: '100%', height: 0, margin: 0, padding: 0 }} />;
+      }
       let highlightStatus: 'past' | 'current' | 'future' = 'current';
       if (firstHighlightedIndex !== -1 && wIdx < firstHighlightedIndex) highlightStatus = 'past';
       else if (lastHighlightedIndex !== -1 && wIdx > lastHighlightedIndex) highlightStatus = 'future';
@@ -375,7 +378,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       );
     }
 
-    if (styleConfig.lineLayout === 'double' && elements.length > 1) {
+    if (styleConfig.lineLayout === 'double' && elements.length > 1 && !segment.text.includes('\n')) {
       const half = Math.ceil(elements.length / 2);
       const line1 = elements.slice(0, half);
       const line2 = elements.slice(half);
@@ -447,13 +450,13 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         style={{
           display: 'flex',
           flexDirection: 'row',
-          flexWrap: (styleConfig.wrapText ?? true) && styleConfig.lineLayout !== 'single' ? 'wrap' : 'nowrap',
+          flexWrap: ((styleConfig.wrapText ?? true) && styleConfig.lineLayout !== 'single') || segment.text.includes('\n') ? 'wrap' : 'nowrap',
           justifyContent: styleConfig.textAlign === 'left' ? 'flex-start' : styleConfig.textAlign === 'right' ? 'flex-end' : 'center',
           alignItems: 'baseline',
           fontFamily: `"${styleConfig.font}", "Noto Sans Devanagari", "Noto Sans Arabic", "Noto Sans Bengali", "Noto Sans", sans-serif`,
           fontWeight: styleConfig.fontWeight ?? 800,
           textAlign: styleConfig.textAlign ?? 'center',
-          whiteSpace: (styleConfig.wrapText ?? true) && styleConfig.lineLayout !== 'single' ? 'normal' : 'nowrap',
+          whiteSpace: ((styleConfig.wrapText ?? true) && styleConfig.lineLayout !== 'single') || segment.text.includes('\n') ? 'normal' : 'nowrap',
           width: (styleConfig.highlightStyle === 'subtitle' || styleConfig.lineLayout === 'single' || styleConfig.lineLayout === 'double') ? 'max-content' : '100%',
           minWidth: styleConfig.animationType === '3-way-slide' ? 'min-content' : undefined,
           lineHeight: styleConfig.lineSpacing ?? 1.1,

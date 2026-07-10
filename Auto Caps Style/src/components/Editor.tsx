@@ -7,7 +7,7 @@ import { useProjectStore } from '@/store/useProjectStore';
 import { CaptionComposition } from '@/remotion/CaptionComposition';
 import { parseSrt } from '@/lib/srtParser';
 import { StylePanel } from './StylePanel';
-import { Undo, Redo, Wand2, Repeat, RefreshCcw, Edit2, Check, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, AlertTriangle, BookOpen } from 'lucide-react';
+import { Undo, Redo, Wand2, Repeat, RefreshCcw, Edit2, Check, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, AlertTriangle, BookOpen, Eraser } from 'lucide-react';
 
 export const Editor: React.FC = () => {
   const { videoUrl, captions, styleConfig, fps, videoDuration, undo, redo, pastCaptions, futureCaptions, individualStylingEnabled, selectedCaptionId, isCaptionOutOfBounds, hasHydrated, projectName } = useProjectStore();
@@ -433,6 +433,14 @@ export const Editor: React.FC = () => {
               </button>
             </div>
             
+            <button
+              onClick={() => setConfirmAction({ type: 'reload', open: true })}
+              className="mt-2 w-full flex items-center justify-center gap-2 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 py-2 rounded-lg border border-indigo-500/30 transition text-sm font-medium"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              Re-Analyze Timeline Caption
+            </button>
+            
 
           </div>
           
@@ -467,17 +475,29 @@ export const Editor: React.FC = () => {
                   <div className="text-xs text-indigo-400 font-mono flex items-center gap-2">
                     {cap.startTime}ms - {cap.endTime}ms
                     {editingCaptionId !== cap.id && (
-                      <button 
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          setEditingCaptionId(cap.id); 
-                          setEditingCaptionText(cap.text); 
-                        }}
-                        className="text-gray-500 hover:text-white transition-colors"
-                        title="Edit text"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
+                      <div className="flex gap-2 items-center">
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            updateCaptionSegment(cap.id, { highlightedWords: [], highlightedIndices: [] });
+                          }}
+                          className="text-gray-400 hover:text-red-400 hover:bg-red-400/10 text-[10px] font-medium flex items-center gap-1 bg-gray-800 px-1.5 py-0.5 rounded border border-gray-700 transition-colors"
+                          title="Remove all highlights in this caption"
+                        >
+                          <Eraser className="w-3 h-3" /> Clear
+                        </button>
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setEditingCaptionId(cap.id); 
+                            setEditingCaptionText(cap.text); 
+                          }}
+                          className="text-gray-500 hover:text-white transition-colors"
+                          title="Edit text"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     )}
                   </div>
                   {hasCustomStyle && (
@@ -680,7 +700,9 @@ export const Editor: React.FC = () => {
               </button>
               <button 
                 onClick={() => {
-                  if (confirmAction.type === 'reload') loadFromTimeline();
+                  if (confirmAction.type === 'reload') {
+                    window.location.hash = 'reanalyzeSubtitles=' + Date.now();
+                  }
                   if (confirmAction.type === 'auto') autoHighlightAll();
                   setConfirmAction({ ...confirmAction, open: false });
                 }}
