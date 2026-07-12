@@ -18,7 +18,7 @@ export type CaptionPosition = 'lower-third' | 'center' | 'top';
 export type AnimationType = 'none' | 'slide-up' | 'pop' | 'fade' | 'typewriter' | 'elastic-bounce' | 'kinetic-clash' | 'chaos-converge' | '3-way-slide';
 export type DisplayMode = 'line' | 'word' | 'letter' | 'karaoke';
 export type TextAlign = 'left' | 'center' | 'right';
-export type HighlightStyle = 'none' | 'subtitle' | 'glow' | 'highlight' | 'underline';
+export type HighlightStyle = 'none' | 'subtitle' | 'glow' | 'highlight' | 'underline' | 'gradient';
 
 export interface StyleConfig {
   font: string;
@@ -68,6 +68,17 @@ export interface StyleConfig {
   innerShadowOnUnderlay: boolean;
   activePreset?: string;
   wordSpacing?: number;
+  enableTextGradient?: boolean;
+  textGradientColors?: string[];
+  gradientType?: 'linear' | 'radial';
+  gradientDirection?: string;
+  gradientColorCount?: 2 | 4;
+  gradientSpread?: number;
+  gradientSoftness?: number;
+  gradientRadialCenter?: string;
+  futureStyleType?: 'normal' | 'button';
+  enableFutureItalic?: boolean;
+  highlightTextTransform?: 'uppercase' | 'lowercase' | 'none';
 }
 
 export interface CustomPreset {
@@ -171,6 +182,17 @@ export const defaultStyle: StyleConfig = {
   innerShadowOnBase: true,
   innerShadowOnHighlight: true,
   innerShadowOnUnderlay: false,
+  enableTextGradient: false,
+  textGradientColors: ['#8B5CF6', '#F0ABFC', '#8B5CF6', '#F0ABFC'],
+  gradientType: 'linear',
+  gradientDirection: '90deg',
+  gradientColorCount: 4,
+  gradientSpread: 100,
+  gradientSoftness: 100,
+  gradientRadialCenter: 'center',
+  futureStyleType: 'normal',
+  enableFutureItalic: false,
+  highlightTextTransform: 'none',
 };
 
 export const useProjectStore = create<ProjectState>()(

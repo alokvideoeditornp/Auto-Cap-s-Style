@@ -108,12 +108,15 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       const originalTransforms = childrenSpans.map(child => (child as HTMLElement).style.transform);
       childrenSpans.forEach(child => (child as HTMLElement).style.transform = 'none');
 
-      const containerW = container.clientWidth;
-      const contentW = content.scrollWidth;
+      const containerRect = container.getBoundingClientRect();
+      const contentRect = content.getBoundingClientRect();
+      
+      const containerW = containerRect.width;
+      const contentW = contentRect.width;
       
       // Always restrict height to the container's max available height so it scales down if it overflows the canvas
-      const containerH = container.clientHeight;
-      const contentH = content.scrollHeight;
+      const containerH = containerRect.height;
+      const contentH = contentRect.height;
       
       // Restore children transforms
       childrenSpans.forEach((child, i) => (child as HTMLElement).style.transform = originalTransforms[i]);
@@ -136,8 +139,8 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         if (scale < 1) {
           scale = scale * 0.98;
         }
-        // Round scale to 3 decimal places to prevent layout jitter across headless renderer frames
-        scale = Math.floor(scale * 1000) / 1000;
+        // Round scale to 2 decimal places to guarantee absolute stability across headless renderer frames
+        scale = Math.floor(scale * 100) / 100;
       }
       
       useProjectStore.getState().setIsCaptionOutOfBounds(false);
@@ -159,7 +162,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
     
     // Recalculate if fonts finish loading asynchronously (especially in browser player)
     let isMounted = true;
-    if (typeof document !== 'undefined' && 'fonts' in document) {
+    if (!isRendering && typeof document !== 'undefined' && 'fonts' in document) {
       document.fonts.ready.then(() => {
         if (isMounted) calculateScale();
       });
@@ -237,16 +240,21 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       
       const color = isHighlighted ? styleConfig.accentColor : styleConfig.baseColor;
       
-      let fontSize = isHighlighted 
-        ? `${styleConfig.fontSize * styleConfig.accentFontSizeMultiplier}px` 
-        : `${styleConfig.fontSize * styleConfig.baseFontSizeMultiplier}px`;
+      const targetMultiplier = isHighlighted 
+        ? (styleConfig.accentFontSizeMultiplier ?? 1) 
+        : (styleConfig.baseFontSizeMultiplier ?? 1);
         
-      let scaleMultiplier = 1;
+      // Calculate the physical layout font size dynamically.
+      // This ensures the word actually takes up more physical space when highlighted,
+      // completely preventing the text from visually overlapping adjacent words.
+      let fontSize = `${styleConfig.fontSize * targetMultiplier}px`;
+      
       if (styleConfig.displayMode === 'karaoke') {
-        fontSize = `${styleConfig.fontSize * styleConfig.baseFontSizeMultiplier}px`;
-        // Scale is locked to 1 in karaoke mode to completely prevent overlapping text
-        scaleMultiplier = 1;
+        // Karaoke typically wants uniform spacing without scaling to avoid overlapping text
+        fontSize = `${styleConfig.fontSize * (styleConfig.baseFontSizeMultiplier ?? 1)}px`;
       }
+      
+      const scaleMultiplier = 1;
       
       const fontFamily = isHighlighted && styleConfig.enableHighlightFont 
         ? `"${styleConfig.highlightFont}", "Noto Sans Devanagari", "Noto Sans Arabic", "Noto Sans Bengali", "Noto Sans", sans-serif`
@@ -258,7 +266,19 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
 
       const verticalMargin = ((styleConfig.lineSpacing ?? 1.1) - 1.1) * 0.5;
       const isWhitespace = word.trim() === '';
-      const currentWordStyles: React.CSSProperties = { margin: `${verticalMargin}em ${styleConfig.wordSpacing ?? 8}px`, display: isWhitespace ? 'none' : 'inline-block', whiteSpace: 'nowrap' };
+      const spacingValue = styleConfig.wordSpacing ?? 8;
+      const mappedSpacing = spacingValue < 8 ? (spacingValue / 8) * 20 - 12 : spacingValue;
+      
+      const maxMultiplier = Math.max(styleConfig.baseFontSizeMultiplier ?? 1, styleConfig.accentFontSizeMultiplier ?? 1);
+      const maxRowHeight = `${(styleConfig.lineSpacing ?? 1.1) * (styleConfig.fontSize * maxMultiplier)}px`;
+      
+      const currentWordStyles: React.CSSProperties = { 
+        margin: `${verticalMargin}em ${mappedSpacing}px`, 
+        display: isWhitespace ? 'none' : 'inline-flex', 
+        alignItems: 'baseline',
+        minHeight: maxRowHeight,
+        whiteSpace: 'nowrap' 
+      };
 
       if (styleConfig.displayMode === 'letter') {
         let letters: string[] = [];
@@ -360,17 +380,33 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       return (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'stretch' }}>
           {pastElements.length > 0 && (
-            <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: shouldWrap ? 'wrap' : 'nowrap', justifyContent: 'flex-start', alignItems: 'baseline' }}>
+            <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: shouldWrap ? 'wrap' : 'nowrap', justifyContent: 'flex-start', alignItems: 'baseline', minHeight: maxRowHeight }}>
               {pastElements}
             </div>
           )}
           {currentElements.length > 0 && (
-            <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: shouldWrap ? 'wrap' : 'nowrap', justifyContent: 'center', alignItems: 'baseline' }}>
+            <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: shouldWrap ? 'wrap' : 'nowrap', justifyContent: 'center', alignItems: 'baseline', minHeight: maxRowHeight }}>
               {currentElements}
             </div>
           )}
           {futureElements.length > 0 && (
-            <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: shouldWrap ? 'wrap' : 'nowrap', justifyContent: 'flex-end', alignItems: 'baseline' }}>
+            <div className="caption-layout-row" style={{ 
+              display: 'flex', 
+              flexDirection: 'row', 
+              flexWrap: shouldWrap ? 'wrap' : 'nowrap', 
+              justifyContent: 'flex-end', 
+              alignItems: 'baseline',
+              minHeight: maxRowHeight,
+              ...(styleConfig.futureStyleType === 'button' ? {
+                backgroundColor: styleConfig.accentColor,
+                padding: '8px 24px',
+                borderRadius: '24px',
+                boxShadow: 'inset 0 0 12px rgba(255,255,255,0.6)',
+                border: '2px solid rgba(255,255,255,0.3)',
+                alignSelf: 'flex-end',
+                marginTop: '12px'
+              } : {})
+            }}>
               {futureElements}
             </div>
           )}
@@ -387,10 +423,10 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
 
       return (
         <div style={{ display: 'flex', flexDirection: 'column', width: 'max-content', alignItems: align }}>
-          <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', justifyContent: align, alignItems: 'baseline' }}>
+          <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', justifyContent: align, alignItems: 'baseline', minHeight: maxRowHeight }}>
             {line1}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', justifyContent: align, alignItems: 'baseline' }}>
+          <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', justifyContent: align, alignItems: 'baseline', minHeight: maxRowHeight }}>
             {line2}
           </div>
         </div>
@@ -416,6 +452,9 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
   const innerShadowRgb = innerRgbMatch 
     ? `${parseInt(innerRgbMatch[1], 16)}, ${parseInt(innerRgbMatch[2], 16)}, ${parseInt(innerRgbMatch[3], 16)}` 
     : '0, 0, 0';
+
+  const maxMultiplier = Math.max(styleConfig.baseFontSizeMultiplier ?? 1, styleConfig.accentFontSizeMultiplier ?? 1);
+  const maxRowHeight = `${(styleConfig.lineSpacing ?? 1.1) * (styleConfig.fontSize * maxMultiplier)}px`;
 
   return (
     <div
@@ -445,6 +484,15 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
           </filter>
         </svg>
       )}
+      <React.Fragment>
+      {styleConfig.enableDropShadow && styleConfig.dropShadowColor && (
+        <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+          <filter id="text-shadow">
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor={styleConfig.dropShadowColor} floodOpacity="0.8"/>
+            <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
+          </filter>
+        </svg>
+      )}
       <div
         ref={contentRef}
         style={{
@@ -459,6 +507,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
           whiteSpace: ((styleConfig.wrapText ?? true) && styleConfig.lineLayout !== 'single') || segment.text.includes('\n') ? 'normal' : 'nowrap',
           width: (styleConfig.highlightStyle === 'subtitle' || styleConfig.lineLayout === 'single' || styleConfig.lineLayout === 'double') ? 'max-content' : '100%',
           minWidth: styleConfig.animationType === '3-way-slide' ? 'min-content' : undefined,
+          minHeight: maxRowHeight,
           lineHeight: styleConfig.lineSpacing ?? 1.1,
           backgroundColor: styleConfig.highlightStyle === 'subtitle' ? (styleConfig.backgroundColor || '#000000') : 'transparent',
           padding: styleConfig.highlightStyle === 'subtitle' ? '0.2em 0.4em' : '0',
@@ -467,6 +516,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       >
         {renderContent()}
       </div>
+    </React.Fragment>
     </div>
   );
 };
@@ -520,10 +570,72 @@ const AnimatedItem: React.FC<{
     fontWeight,
   };
   const finalColor = color;
+
+  if (styleConfig.highlightTextTransform && styleConfig.highlightTextTransform !== 'none') {
+    if (isHighlighted || styleConfig.highlightTextTransform === 'uppercase') { // if it's uppercase, should it apply to everything or just highlight? The user wanted uppercase on highlight.
+      if (isHighlighted) extraStyles.textTransform = styleConfig.highlightTextTransform;
+    }
+  }
+
+  if (styleConfig.enableFutureItalic && highlightStatus === 'future') {
+    extraStyles.fontStyle = 'italic';
+  }
+
+  // Always apply padding to prevent the bounding box from jumping during animation and to prevent background-clip from cutting off tall ascenders/descenders (e.g. Nepali fonts)
+  // CRITICAL: We MUST use equal negative margins to ensure the padding does NOT increase the physical layout height of the element, which would cause the entire row to jump up/down!
+  extraStyles.paddingTop = '0.2em';
+  extraStyles.paddingBottom = '0.4em';
+  extraStyles.marginTop = '-0.2em';
+  extraStyles.marginBottom = '-0.4em';
+
+  if (isHighlighted && (styleConfig.highlightStyle === 'gradient' || (styleConfig.enableTextGradient && styleConfig.textGradientColors && styleConfig.textGradientColors.length > 0))) {
+    if (styleConfig.highlightStyle === 'gradient') {
+      const gColors = styleConfig.textGradientColors && styleConfig.textGradientColors.length > 0 ? styleConfig.textGradientColors : ['#8B5CF6', '#F0ABFC', '#8B5CF6', '#F0ABFC'];
+      const count = styleConfig.gradientColorCount === 2 ? 2 : 4;
+      const activeColors = gColors.slice(0, count);
+      
+      const spread = styleConfig.gradientSpread ?? 100;
+      const step = spread / Math.max(1, count - 1);
+      const softness = styleConfig.gradientSoftness ?? 100;
+      const halfTransition = (step * (softness / 100)) / 2;
+      
+      const stopsArray: string[] = [];
+      activeColors.forEach((color, idx) => {
+        const centerLeft = (idx - 0.5) * step;
+        const centerRight = (idx + 0.5) * step;
+        
+        let startPos = centerLeft + halfTransition;
+        let endPos = centerRight - halfTransition;
+        
+        if (idx === 0) startPos = 0;
+        if (idx === count - 1) endPos = spread;
+        
+        stopsArray.push(`${color} ${startPos}%`);
+        if (Math.abs(startPos - endPos) > 0.01) {
+          stopsArray.push(`${color} ${endPos}%`);
+        }
+      });
+      const stops = stopsArray.join(', ');
+
+      if (styleConfig.gradientType === 'radial') {
+        const center = styleConfig.gradientRadialCenter || 'center';
+        extraStyles.backgroundImage = `radial-gradient(circle at ${center}, ${stops})`;
+      } else {
+        const dir = styleConfig.gradientDirection || '90deg';
+        extraStyles.backgroundImage = `linear-gradient(${dir}, ${stops})`;
+      }
+    } else {
+      extraStyles.backgroundImage = `linear-gradient(180deg, ${styleConfig.textGradientColors!.join(', ')})`;
+    }
+    extraStyles.WebkitBackgroundClip = 'text';
+    extraStyles.WebkitTextFillColor = 'transparent';
+    extraStyles.color = 'transparent'; // Fallback
+  }
   
   if (isHighlighted && styleConfig.highlightStyle === 'highlight') {
     extraStyles.backgroundColor = styleConfig.backgroundColor || '#000000';
-    extraStyles.padding = styleConfig.displayMode === 'letter' ? '0px 2px' : '0px 16px';
+    extraStyles.paddingLeft = styleConfig.displayMode === 'letter' ? '2px' : '16px';
+    extraStyles.paddingRight = styleConfig.displayMode === 'letter' ? '2px' : '16px';
     extraStyles.borderRadius = '16px';
   } else if (isHighlighted && styleConfig.highlightStyle === 'glow') {
     const intensity = styleConfig.glowIntensity ?? 3;
@@ -539,8 +651,8 @@ const AnimatedItem: React.FC<{
   if (styleConfig.animationType === 'none') {
     opacity = 1; // No fade in, no fade out
   } else if (styleConfig.animationType === 'slide-up') {
-    translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateLeft: 'clamp' }) + 
-                 interpolate(exitProgress, [0, 1], [0, 50], { extrapolateLeft: 'clamp' });
+    translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) + 
+                 interpolate(exitProgress, [0, 1], [0, 50], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     opacity = interpolate(entranceProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - 
               interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'fade') {
@@ -553,7 +665,7 @@ const AnimatedItem: React.FC<{
       config: { damping: 10, mass: 0.5 },
       durationInFrames: entranceDurationFrames,
     });
-    translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateLeft: 'clamp' });
+    translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     opacity = interpolate(entranceProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - 
               interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'elastic-bounce') {
@@ -563,20 +675,20 @@ const AnimatedItem: React.FC<{
       config: { damping: 5, mass: 1, stiffness: 200 },
       durationInFrames: entranceDurationFrames * 2,
     });
-    translateY = interpolate(exitProgress, [0, 1], [0, 50], { extrapolateLeft: 'clamp' });
+    translateY = interpolate(exitProgress, [0, 1], [0, 50], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     opacity = interpolate(entranceProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - 
               interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'kinetic-clash') {
     const direction = isHighlighted ? -1 : 1;
     const startX = direction * 300; 
     
-    translateX = interpolate(entranceProgress, [0, 1], [startX, 0]) + interpolate(exitProgress, [0, 1], [0, startX * 1.5]);
-    opacity = interpolate(entranceProgress, [0, 0.5, 1], [0, 1, 1]) - interpolate(exitProgress, [0, 1], [0, 1]);
+    translateX = interpolate(entranceProgress, [0, 1], [startX, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) + interpolate(exitProgress, [0, 1], [0, startX * 1.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    opacity = interpolate(entranceProgress, [0, 0.5, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     
     if (styleConfig.motionBlur) {
       const intensity = styleConfig.motionBlurIntensity ?? 15;
-      const blurAmount = interpolate(entranceProgress, [0, 1], [intensity, 0]);
-      const exitBlur = interpolate(exitProgress, [0, 1], [0, intensity]);
+      const blurAmount = interpolate(entranceProgress, [0, 1], [intensity, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+      const exitBlur = interpolate(exitProgress, [0, 1], [0, intensity], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
       const currentBlur = Math.max(blurAmount, exitBlur);
       if (currentBlur > 0) {
         if (extraStyles.filter) {
@@ -595,28 +707,28 @@ const AnimatedItem: React.FC<{
     const startY = Math.sin(angle) * distance;
     const startRot = (random(index + 20) - 0.5) * 360; 
     
-    translateX = interpolate(entranceProgress, [0, 1], [startX, 0]) + interpolate(exitProgress, [0, 1], [0, startX * 1.5]);
-    translateY = interpolate(entranceProgress, [0, 1], [startY, 0]) + interpolate(exitProgress, [0, 1], [0, startY * 1.5]);
-    rotate = interpolate(entranceProgress, [0, 1], [startRot, 0]);
-    scale = interpolate(exitProgress, [0, 1], [1, 0.5]);
-    opacity = interpolate(entranceProgress, [0, 0.5, 1], [0, 1, 1]) - interpolate(exitProgress, [0, 1], [0, 1]);
+    translateX = interpolate(entranceProgress, [0, 1], [startX, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) + interpolate(exitProgress, [0, 1], [0, startX * 1.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    translateY = interpolate(entranceProgress, [0, 1], [startY, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) + interpolate(exitProgress, [0, 1], [0, startY * 1.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    rotate = interpolate(entranceProgress, [0, 1], [startRot, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    scale = interpolate(exitProgress, [0, 1], [1, 0.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    opacity = interpolate(entranceProgress, [0, 0.5, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === '3-way-slide') {
     if (highlightStatus === 'past') {
-      translateX = interpolate(entranceProgress, [0, 1], [-100, 0], { extrapolateLeft: 'clamp' });
+      translateX = interpolate(entranceProgress, [0, 1], [-100, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     } else if (highlightStatus === 'future') {
-      translateX = interpolate(entranceProgress, [0, 1], [100, 0], { extrapolateLeft: 'clamp' });
+      translateX = interpolate(entranceProgress, [0, 1], [100, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     } else {
-      translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateLeft: 'clamp' });
+      translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     }
     
-    translateX += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'past' ? -100 : highlightStatus === 'future' ? 100 : 0], { extrapolateLeft: 'clamp' });
-    translateY += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'current' ? 50 : 0], { extrapolateLeft: 'clamp' });
+    translateX += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'past' ? -100 : highlightStatus === 'future' ? 100 : 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    translateY += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'current' ? 50 : 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     
     opacity = interpolate(entranceProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - 
               interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'typewriter') {
     opacity = relativeFrame > 0 ? 1 : 0;
-    opacity = opacity - interpolate(exitProgress, [0, 1], [0, 1]);
+    opacity = opacity - interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   }
 
   // Apply general motion blur if enabled

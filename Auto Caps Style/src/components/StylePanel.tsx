@@ -47,6 +47,7 @@ const PRESETS: { name: string; config: Partial<StyleConfig>; preview: React.Reac
       </span>
     )
   },
+
   {
     name: 'Classic Reels',
     config: {
@@ -1011,11 +1012,11 @@ export const StylePanel = () => {
         <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-700">
           <label className="text-sm text-gray-400 font-medium">Highlight Style</label>
           <div className="grid grid-cols-2 gap-2">
-            {(['none', 'subtitle', 'glow', 'highlight', 'underline'] as const).map((hStyle) => (
+            {(['none', 'subtitle', 'glow', 'highlight', 'underline', 'gradient'] as const).map((hStyle) => (
               <button
                 key={hStyle}
                 onClick={() => handleUpdate({ highlightStyle: hStyle })}
-                className={`py-2 text-sm font-medium rounded-lg border transition-all ${hStyle === 'underline' ? 'col-span-2' : ''} ${
+                className={`py-2 text-sm font-medium rounded-lg border transition-all ${
                   styleConfig.highlightStyle === hStyle
                     ? 'bg-indigo-600 border-indigo-500 text-white shadow'
                     : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
@@ -1025,6 +1026,109 @@ export const StylePanel = () => {
               </button>
             ))}
           </div>
+          {styleConfig.highlightStyle === 'gradient' && (
+            <div className="flex flex-col gap-3 mt-3 p-3 bg-gray-800 rounded-lg border border-gray-700">
+              <label className="text-sm font-bold text-gray-300">Gradient Settings</label>
+              
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-400">Type</label>
+                <div className="flex gap-2">
+                  <button onClick={() => handleUpdate({ gradientType: 'linear' })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientType !== 'radial' ? 'bg-indigo-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>Linear</button>
+                  <button onClick={() => handleUpdate({ gradientType: 'radial' })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientType === 'radial' ? 'bg-indigo-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>Radial</button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1 mt-2">
+                <label className="text-xs text-gray-400">Color Count</label>
+                <div className="flex gap-2">
+                  <button onClick={() => handleUpdate({ gradientColorCount: 2 })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientColorCount === 2 ? 'bg-indigo-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>2 Colors</button>
+                  <button onClick={() => handleUpdate({ gradientColorCount: 4 })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientColorCount !== 2 ? 'bg-indigo-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>4 Colors</button>
+                </div>
+              </div>
+
+              {styleConfig.gradientType === 'radial' ? (
+                <div className="flex flex-col gap-1 mt-2">
+                  <label className="text-xs text-gray-400">Radial Center</label>
+                  <select 
+                    value={styleConfig.gradientRadialCenter || 'center'} 
+                    onChange={(e) => handleUpdate({ gradientRadialCenter: e.target.value })}
+                    className="w-full bg-gray-900 border border-gray-700 rounded p-1.5 text-xs text-gray-300 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="center">Center</option>
+                    <option value="left">Left</option>
+                    <option value="right">Right</option>
+                    <option value="top">Top</option>
+                    <option value="bottom">Bottom</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1 mt-2">
+                  <label className="text-xs text-gray-400">Direction</label>
+                  <select 
+                    value={styleConfig.gradientDirection || '90deg'} 
+                    onChange={(e) => handleUpdate({ gradientDirection: e.target.value })}
+                    className="w-full bg-gray-900 border border-gray-700 rounded p-1.5 text-xs text-gray-300 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="90deg">Left to Right</option>
+                    <option value="180deg">Top to Bottom</option>
+                    <option value="135deg">Diagonal Down</option>
+                    <option value="45deg">Diagonal Up</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1 mt-2">
+                <label className="text-xs text-gray-400 flex justify-between items-center">
+                  <span>Gradient Spread</span>
+                  <span className="text-indigo-400">{styleConfig.gradientSpread ?? 100}%</span>
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="100"
+                  value={styleConfig.gradientSpread ?? 100}
+                  onChange={(e) => handleUpdate({ gradientSpread: parseInt(e.target.value) })}
+                  className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1 mt-2">
+                <label className="text-xs text-gray-400 flex justify-between items-center">
+                  <span>Gradient Softness</span>
+                  <span className="text-indigo-400">{styleConfig.gradientSoftness ?? 100}%</span>
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={styleConfig.gradientSoftness ?? 100}
+                  onChange={(e) => handleUpdate({ gradientSoftness: parseInt(e.target.value) })}
+                  className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1 mt-2">
+                <label className="text-xs text-gray-400">Gradient Colors</label>
+                <div className={`grid gap-2 ${styleConfig.gradientColorCount === 2 ? 'grid-cols-2' : 'grid-cols-4'}`}>
+                  {[0, 1, 2, 3].slice(0, styleConfig.gradientColorCount === 2 ? 2 : 4).map((index) => (
+                    <CustomColorPicker
+                      key={index}
+                      label={`Color #${index + 1}`}
+                      value={(styleConfig.textGradientColors || ['#8B5CF6', '#F0ABFC', '#8B5CF6', '#F0ABFC'])[index] || '#ffffff'}
+                      onChange={(c) => {
+                        const newColors = [...(styleConfig.textGradientColors || ['#8B5CF6', '#F0ABFC', '#8B5CF6', '#F0ABFC'])];
+                        newColors[index] = c;
+                        handleUpdate({ textGradientColors: newColors });
+                      }}
+                      savedColors={customColors}
+                      onSave={addCustomColor}
+                      onRemove={removeCustomColor}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
           {styleConfig.highlightStyle === 'glow' && (
             <div className="flex flex-col gap-2 mt-2">
               <label className="text-xs text-gray-400 flex justify-between items-center">
@@ -1149,7 +1253,7 @@ export const StylePanel = () => {
           >
             <option value="top">Top</option>
             <option value="center">Center</option>
-            <option value="lower-third">Lower Third (Bottom)</option>
+            <option value="lower-third">Bottom</option>
           </select>
         </div>
       </AccordionItem>

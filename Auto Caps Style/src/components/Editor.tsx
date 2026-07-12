@@ -534,8 +534,11 @@ export const Editor: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-200 leading-relaxed flex flex-wrap gap-1 mt-2">
-                    {cap.text.split(' ').map((word, i) => {
+                  <div className="text-sm text-gray-200 leading-relaxed flex flex-wrap gap-1 mt-2">
+                    {cap.text.replace(/\n/g, ' \n ').split(' ').filter(w => w !== '').map((word, i) => {
+                    if (word === '\n') {
+                      return <div key={`br-${i}`} className="basis-full h-0 m-0 p-0" />;
+                    }
                     const cleanWord = word.replace(/[.,!?;:"'(){}[\]\-।॥]/g, '').toLowerCase().trim();
                     const isHighlighted = cap.highlightedIndices 
                       ? cap.highlightedIndices.includes(i)
@@ -557,7 +560,7 @@ export const Editor: React.FC = () => {
                       </span>
                     );
                   })}
-                </p>
+                </div>
                 )}
               </div>
               );

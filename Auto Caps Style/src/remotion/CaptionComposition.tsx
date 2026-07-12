@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { AbsoluteFill, Sequence, Video, useVideoConfig } from 'remotion';
+import React, { useEffect, useState } from 'react';
+import { AbsoluteFill, Sequence, Video, useVideoConfig, delayRender, continueRender } from 'remotion';
 import { CaptionSegment, StyleConfig } from '../store/useProjectStore';
 import { CaptionLine } from './CaptionLine';
 
@@ -12,6 +12,17 @@ export interface CaptionCompositionProps {
 
 export const CaptionComposition: React.FC<CaptionCompositionProps> = ({ videoUrl, captions, styleConfig, isRendering }) => {
   const { fps } = useVideoConfig();
+  const [handle] = useState(() => delayRender('Loading fonts...'));
+
+  useEffect(() => {
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      document.fonts.ready.then(() => {
+        continueRender(handle);
+      });
+    } else {
+      continueRender(handle);
+    }
+  }, [handle]);
 
   // Position styles
   let alignStyle: React.CSSProperties = { justifyContent: 'flex-end', paddingBottom: '10%' };
