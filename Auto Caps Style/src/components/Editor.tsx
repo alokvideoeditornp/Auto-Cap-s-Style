@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Player } from '@remotion/player';
 import type { PlayerRef } from '@remotion/player';
 import { useProjectStore } from '@/store/useProjectStore';
@@ -25,6 +25,14 @@ export const Editor: React.FC = () => {
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isMemoryBoxOpen, setIsMemoryBoxOpen] = useState(false);
+
+  // Stable ref for captions — used inside callbacks to avoid stale closures
+  // without putting `captions` in dependency arrays (which would cause re-render loops).
+  const captionsRef = useRef(captions);
+  useEffect(() => { captionsRef.current = captions; }, [captions]);
+
+  // Stable ref for the render poll interval — lets us clear it on unmount.
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   const [mounted, setMounted] = useState(false);
   const [storageWarning, setStorageWarning] = useState<{ show: boolean; sizeGB: number }>({ show: false, sizeGB: 0 });
@@ -180,14 +188,18 @@ export const Editor: React.FC = () => {
     setCaptions(newCaptions);
   };
 
-  const loadFromTimeline = React.useCallback(() => {
+  // loadFromTimeline reads captions via captionsRef to avoid stale-closure re-render loops.
+  // It is intentionally NOT dependent on `captions` so the autoLoad useEffect below
+  // only fires once (on hydration) and not every time captions change.
+  const loadFromTimeline = useCallback(() => {
     fetch('/auto.srt?t=' + Date.now()) // cache bust
       .then(res => res.text())
       .then(text => {
         if (text) {
            const parsed = parseSrt(text);
+           const currentCaptions = captionsRef.current;
            const merged = parsed.map(newCap => {
-             const oldCap = captions.find(c => 
+             const oldCap = currentCaptions.find(c =>
                c.id === newCap.id || Math.abs(c.startTime - newCap.startTime) < 1000
              );
              if (oldCap) {
@@ -205,7 +217,7 @@ export const Editor: React.FC = () => {
         }
       })
       .catch(err => console.error(err));
-  }, [setCaptions, captions]);
+  }, [setCaptions]); // No `captions` dep — use captionsRef instead to prevent loop
 
   useEffect(() => {
     if (!hasHydrated) return; // Wait for store to load from localStorage first!
@@ -222,7 +234,11 @@ export const Editor: React.FC = () => {
       }
       loadFromTimeline();
     }
-  }, [loadFromTimeline, setVideoData, videoUrl, videoDuration, hasHydrated]);
+    // Intentionally exclude loadFromTimeline from deps — it is stable (no captions dep).
+    // Including it caused an infinite loop: captions change → loadFromTimeline recreated
+    // → this effect re-runs → loadFromTimeline → captions change → …
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasHydrated, setVideoData, setProjectName, videoUrl, videoDuration]);
 
   const maxCanvasTime = captions.length > 0 ? captions[captions.length - 1].endTime : 0;
   
@@ -336,25 +352,39 @@ export const Editor: React.FC = () => {
     }
   };
 
-  const pollStatus = async (jobId: string) => {
-    const interval = setInterval(async () => {
-      const res = await fetch(`/api/render?jobId=${jobId}`);
-      const data = await res.json();
-      if (data.status === 'processing') {
-        setRenderProgress(data.progress);
-      } else if (data.status === 'done') {
-        setRenderProgress(100);
-        setDownloadUrl(data.url);
-        setIsRendering(false);
-        clearInterval(interval);
-        window.location.hash = `importMediaPool=${data.url}`;
-      } else if (data.status === 'failed') {
-        setIsRendering(false);
-        clearInterval(interval);
-        alert('Render failed: ' + (data.error || 'Unknown error'));
+  const pollStatus = (jobId: string) => {
+    // Clear any existing poll before starting a new one
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/render?jobId=${jobId}`);
+        const data = await res.json();
+        if (data.status === 'processing') {
+          setRenderProgress(data.progress);
+        } else if (data.status === 'done') {
+          setRenderProgress(100);
+          setDownloadUrl(data.url);
+          setIsRendering(false);
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+          window.location.hash = `importMediaPool=${data.url}`;
+        } else if (data.status === 'failed') {
+          setIsRendering(false);
+          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+          alert('Render failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        console.error('Poll error:', err);
       }
     }, 2000);
   };
+
+  // Clean up the poll interval when the component unmounts
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen lg:overflow-hidden bg-black text-white p-4 gap-4 lg:gap-6 relative">

@@ -75,7 +75,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       staggerFrames = Math.min(defaultStagger, Math.max(0, maxStaggerDelay));
     }
   } else {
-    staggerFrames = defaultStagger; // Force line stagger to be the default constant delay, otherwise it might be 0 for short captions
+    staggerFrames = defaultStagger;
   }
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,40 +84,52 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
   useLayoutEffect(() => {
     const calculateScale = () => {
       if (!containerRef.current || !contentRef.current) return;
-      
+
       const container = containerRef.current;
       const content = contentRef.current;
-      
+
       // Reset container height and content transform to measure true size
       container.style.height = (styleConfig.clipText ?? false) ? `${styleConfig.textBoxHeight ?? 20}%` : 'auto';
       content.style.transform = 'none';
-      
+      content.style.transformOrigin = '';
+
       // Temporarily align left to accurately measure scrollWidth without left-overflow truncation
       const originalJustifyContent = content.style.justifyContent;
       const originalTextAlign = content.style.textAlign;
       content.style.justifyContent = 'flex-start';
       content.style.textAlign = 'left';
-      
+
       // Also reset any inner rows that might have center/right alignment causing left-overflow
       const layoutRows = Array.from(content.querySelectorAll('.caption-layout-row')) as HTMLElement[];
       const originalRowJustify = layoutRows.map(row => row.style.justifyContent);
       layoutRows.forEach(row => row.style.justifyContent = 'flex-start');
-      
-      // Strip transforms from animated children to get true layout size
+
+      // Strip transforms from animated children to get true layout size.
+      // NOTE: This is safe — useLayoutEffect runs synchronously before the browser paints,
+      // so stripping → measuring → restoring all happens in one block with zero visible flicker.
       const childrenSpans = Array.from(content.querySelectorAll('span'));
       const originalTransforms = childrenSpans.map(child => (child as HTMLElement).style.transform);
       childrenSpans.forEach(child => (child as HTMLElement).style.transform = 'none');
 
       const containerRect = container.getBoundingClientRect();
       const contentRect = content.getBoundingClientRect();
-      
+
       const containerW = containerRect.width;
-      const contentW = contentRect.width;
-      
-      // Always restrict height to the container's max available height so it scales down if it overflows the canvas
       const containerH = containerRect.height;
+
+      // Also find the widest individual word span.
+      // The content div has width:100% so contentRect.width always equals containerW,
+      // which means a single wide word (e.g. a long word at 1.3× accent size) would
+      // silently overflow without being detected. By measuring each span individually
+      // we catch any word that exceeds the container boundary.
+      const maxSingleSpanW = childrenSpans.reduce((max, child) => {
+        const w = (child as HTMLElement).getBoundingClientRect().width;
+        return w > max ? w : max;
+      }, 0);
+
+      const contentW = Math.max(contentRect.width, maxSingleSpanW);
       const contentH = contentRect.height;
-      
+
       // Restore children transforms
       childrenSpans.forEach((child, i) => (child as HTMLElement).style.transform = originalTransforms[i]);
 
@@ -125,62 +137,54 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       content.style.justifyContent = originalJustifyContent;
       content.style.textAlign = originalTextAlign;
       layoutRows.forEach((row, i) => row.style.justifyContent = originalRowJustify[i]);
-      
+
+      useProjectStore.getState().setIsCaptionOutOfBounds(false);
+
       let scale = 1;
-      
       if (contentW > containerW || contentH > containerH) {
         const scaleX = containerW / contentW;
         const scaleY = containerH / contentH;
-        
-        // We ONLY scale down to fit. Never scale up above 1.
+        // Only scale down to fit, never up above 1.
         scale = Math.min(scaleX, scaleY, 1);
-        
-        // Small buffer to ensure no pixel clipping if we actually scaled
-        if (scale < 1) {
-          scale = scale * 0.98;
-        }
-        // Round scale to 2 decimal places to guarantee absolute stability across headless renderer frames
+        if (scale < 1) scale = scale * 0.98;
+        // Round to 2 decimal places for stable headless renderer output
         scale = Math.floor(scale * 100) / 100;
       }
-      
-      useProjectStore.getState().setIsCaptionOutOfBounds(false);
-      
+
       let transformOrigin = 'center center';
       if (styleConfig.textAlign === 'left') transformOrigin = 'left center';
       if (styleConfig.textAlign === 'right') transformOrigin = 'right center';
-      
+
       content.style.transform = `scale(${scale})`;
       content.style.transformOrigin = transformOrigin;
-      
-      // Adjust container height to match scaled content to prevent empty vertical space
+
+      // Shrink container height to avoid empty vertical space below scaled content
       if (!styleConfig.clipText && scale < 1) {
         container.style.height = `${contentH * scale}px`;
       }
     };
 
     calculateScale();
-    
-    // Recalculate if fonts finish loading asynchronously (especially in browser player)
+
+    // Re-run after fonts settle in the browser player (not during rendering)
     let isMounted = true;
     if (!isRendering && typeof document !== 'undefined' && 'fonts' in document) {
       document.fonts.ready.then(() => {
         if (isMounted) calculateScale();
       });
     }
-    
-    return () => {
-      isMounted = false;
-    };
+
+    return () => { isMounted = false; };
   }, [
-    words, 
-    styleConfig.clipText, 
-    styleConfig.textBoxWidth, 
-    styleConfig.textBoxHeight, 
-    styleConfig.fontSize, 
-    styleConfig.wrapText, 
-    styleConfig.lineLayout, 
-    styleConfig.baseFontSizeMultiplier, 
-    styleConfig.accentFontSizeMultiplier, 
+    words,
+    styleConfig.clipText,
+    styleConfig.textBoxWidth,
+    styleConfig.textBoxHeight,
+    styleConfig.fontSize,
+    styleConfig.wrapText,
+    styleConfig.lineLayout,
+    styleConfig.baseFontSizeMultiplier,
+    styleConfig.accentFontSizeMultiplier,
     styleConfig.textAlign,
     styleConfig.font,
     styleConfig.highlightFont,
@@ -190,7 +194,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
     styleConfig.animationType,
     styleConfig.displayMode,
     styleConfig.highlightStyle,
-    styleConfig.wordSpacing
+    styleConfig.wordSpacing,
   ]);
 
   const renderContent = () => {
@@ -293,13 +297,17 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
           <span key={wIdx} style={currentWordStyles}>
             {letters.map((char, cIdx) => {
               const currentItemIndex = itemIndex++;
+              // 3-Way Slide: current words must rise simultaneously — no per-letter stagger
+              const letterDelay = (styleConfig.animationType === '3-way-slide' && highlightStatus === 'current')
+                ? 0
+                : currentItemIndex * staggerFrames;
               return (
                 <AnimatedItem
                   key={cIdx}
                   char={char === ' ' ? '\u00A0' : char}
                   frame={frame}
                   fps={fps}
-                  delay={currentItemIndex * staggerFrames}
+                  delay={letterDelay}
                   styleConfig={styleConfig}
                   exitProgress={exitProgress}
                   color={color}
@@ -333,6 +341,12 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         delay = 0; // All text animates at once
       } else if (styleConfig.displayMode === 'karaoke') {
         delay = karaokeStartFrame; // Words animate in sequentially as they are highlighted
+      }
+
+      // 3-Way Slide: highlighted (current) words must ALL slide up simultaneously.
+      // Per-word stagger makes them pop up one-by-one below the text box = glitch.
+      if (styleConfig.animationType === '3-way-slide' && highlightStatus === 'current') {
+        delay = 0;
       }
       
       return (
@@ -385,7 +399,23 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
             </div>
           )}
           {currentElements.length > 0 && (
-            <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: shouldWrap ? 'wrap' : 'nowrap', justifyContent: 'center', alignItems: 'baseline', minHeight: maxRowHeight }}>
+            // overflow:hidden masks the 40px slide-start position so words are invisible
+            // below the row boundary and cleanly "wipe up" into view — no floating glitch.
+            // paddingBottom gives descenders room so they aren't clipped by the mask.
+            <div
+              className="caption-layout-row"
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: shouldWrap ? 'wrap' : 'nowrap',
+                justifyContent: 'center',
+                alignItems: 'baseline',
+                minHeight: maxRowHeight,
+                overflow: 'hidden',
+                paddingBottom: '8px',
+                marginBottom: '-8px',
+              }}
+            >
               {currentElements}
             </div>
           )}
@@ -512,6 +542,16 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
           backgroundColor: styleConfig.highlightStyle === 'subtitle' ? (styleConfig.backgroundColor || '#000000') : 'transparent',
           padding: styleConfig.highlightStyle === 'subtitle' ? '0.2em 0.4em' : '0',
           borderRadius: styleConfig.highlightStyle === 'subtitle' ? '0.2em' : '0',
+          // Slide-up wipe mask: words are invisible below the container boundary
+          // and revealed as they slide up into view. Same paddingBottom/marginBottom
+          // trick as 3-Way Slide to avoid clipping descenders (g, p, y).
+          ...(styleConfig.animationType === 'slide-up' ? {
+            overflow: 'hidden',
+            paddingBottom: '10px',
+            marginBottom: '-10px',
+            paddingTop: '4px',
+            marginTop: '-4px',
+          } : {}),
         }}
       >
         {renderContent()}
@@ -651,10 +691,25 @@ const AnimatedItem: React.FC<{
   if (styleConfig.animationType === 'none') {
     opacity = 1; // No fade in, no fade out
   } else if (styleConfig.animationType === 'slide-up') {
-    translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) + 
-                 interpolate(exitProgress, [0, 1], [0, 50], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    opacity = interpolate(entranceProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - 
-              interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    // Critically-damped spring: exactly zero overshoot, silky smooth slide.
+    // damping / (2 * sqrt(mass * stiffness)) = 20 / (2*sqrt(100)) = 1.0 → no bounce.
+    const smoothSlideSpring = spring({
+      frame: relativeFrame,
+      fps,
+      config: { damping: 20, stiffness: 100, mass: 1 },
+      durationInFrames: entranceDurationFrames,
+    });
+
+    // Entrance from below (40px), exit upward (-40px) — conveyor-belt style.
+    // The overflow:hidden wipe mask on contentRef makes words visible only
+    // once they cross into the container boundary, eliminating the floating glitch.
+    translateY = interpolate(smoothSlideSpring, [0, 1], [40, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })
+               + interpolate(exitProgress, [0, 1], [0, -40], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+
+    // Opacity snaps to 1 almost instantly (wipe handles visibility) and holds
+    // until the last ~40% of the exit, then fades out cleanly.
+    opacity = interpolate(smoothSlideSpring, [0, 0.08, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })
+            - interpolate(exitProgress, [0, 0.6, 1], [0, 0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'fade') {
     opacity = interpolate(entranceProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - 
               interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
@@ -680,11 +735,29 @@ const AnimatedItem: React.FC<{
               interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'kinetic-clash') {
     const direction = isHighlighted ? -1 : 1;
-    const startX = direction * 300; 
-    
-    translateX = interpolate(entranceProgress, [0, 1], [startX, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) + interpolate(exitProgress, [0, 1], [0, startX * 1.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    opacity = interpolate(entranceProgress, [0, 0.5, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    
+    const startX = direction * 300;
+
+    // Dedicated elastic spring: fast arrival with a satisfying bounce at landing.
+    // Low damping → controlled overshoot; high stiffness → fast snap-in.
+    // No extrapolateRight clamp so the spring can overshoot past 0 and settle smoothly.
+    const elasticSpring = spring({
+      frame: relativeFrame,
+      fps,
+      config: { damping: 9, stiffness: 220, mass: 0.8 },
+      durationInFrames: entranceDurationFrames,
+    });
+
+    translateX = interpolate(elasticSpring, [0, 1], [startX, 0], { extrapolateLeft: 'clamp' })
+               + interpolate(exitProgress, [0, 1], [0, startX * 1.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+
+    // Scale: words arrive slightly compressed then pop past full size and settle.
+    // This gives a physical "impact" feel at the end of the slide.
+    const arrivalScale = interpolate(elasticSpring, [0, 0.6, 1], [0.85, 1.08, 1.0], { extrapolateLeft: 'clamp' });
+    scale = arrivalScale * interpolate(exitProgress, [0, 1], [1, 0.8], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+
+    opacity = interpolate(elasticSpring, [0, 0.25, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })
+            - interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+
     if (styleConfig.motionBlur) {
       const intensity = styleConfig.motionBlurIntensity ?? 15;
       const blurAmount = interpolate(entranceProgress, [0, 1], [intensity, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
@@ -701,31 +774,65 @@ const AnimatedItem: React.FC<{
   } else if (styleConfig.animationType === 'chaos-converge') {
     const random = (seed: number) => { const x = Math.sin(seed + 1) * 10000; return x - Math.floor(x); };
     const angle = random(index) * Math.PI * 2;
-    const distance = 400 + random(index + 10) * 300; 
-    
+    const distance = 400 + random(index + 10) * 300;
+
     const startX = Math.cos(angle) * distance;
     const startY = Math.sin(angle) * distance;
-    const startRot = (random(index + 20) - 0.5) * 360; 
-    
-    translateX = interpolate(entranceProgress, [0, 1], [startX, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) + interpolate(exitProgress, [0, 1], [0, startX * 1.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    translateY = interpolate(entranceProgress, [0, 1], [startY, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) + interpolate(exitProgress, [0, 1], [0, startY * 1.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    rotate = interpolate(entranceProgress, [0, 1], [startRot, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    scale = interpolate(exitProgress, [0, 1], [1, 0.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    opacity = interpolate(entranceProgress, [0, 0.5, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    const startRot = (random(index + 20) - 0.5) * 180; // max ±90° — full 360 looks broken
+
+    // Tuned for controlled elastic feel: fast enough to feel energetic,
+    // damped enough to not feel chaotic/jerky.
+    const chaosSpring = spring({
+      frame: relativeFrame,
+      fps,
+      config: { damping: 9, stiffness: 160, mass: 0.75 },
+      durationInFrames: entranceDurationFrames,
+    });
+
+    // Position: allow overshoot (no extrapolateRight: 'clamp') so words bounce past
+    // their final position and snap back
+    translateX = interpolate(chaosSpring, [0, 1], [startX, 0], { extrapolateLeft: 'clamp' })
+               + interpolate(exitProgress, [0, 1], [0, startX * 1.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    translateY = interpolate(chaosSpring, [0, 1], [startY, 0], { extrapolateLeft: 'clamp' })
+               + interpolate(exitProgress, [0, 1], [0, startY * 1.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+
+    // Rotation also allowed to overshoot for extra wildness
+    rotate = interpolate(chaosSpring, [0, 1], [startRot, 0], { extrapolateLeft: 'clamp' })
+           + interpolate(exitProgress, [0, 1], [0, startRot * -0.5], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+
+    // Scale: words start tiny (feel like rushing in from far away) and pop to full size.
+    // Entrance scale also uses the energetic spring for a matching bounce.
+    const entranceScale = interpolate(chaosSpring, [0, 0.5, 1], [0.05, 0.85, 1.0], { extrapolateLeft: 'clamp' });
+    const exitScale = interpolate(exitProgress, [0, 1], [1, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    scale = entranceScale * exitScale;
+
+    opacity = interpolate(chaosSpring, [0, 0.25, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })
+            - interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === '3-way-slide') {
+    // Critically-damped spring: damping / (2 * sqrt(mass * stiffness)) = 20/(2*sqrt(100)) = 1.0
+    // Ratio of exactly 1.0 means zero overshoot — the smoothest possible slide with no bounce.
+    const slideSpring = spring({
+      frame: relativeFrame,
+      fps,
+      config: { damping: 20, stiffness: 100, mass: 1 },
+      durationInFrames: entranceDurationFrames,
+    });
+
     if (highlightStatus === 'past') {
-      translateX = interpolate(entranceProgress, [0, 1], [-100, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+      translateX = interpolate(slideSpring, [0, 1], [-100, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     } else if (highlightStatus === 'future') {
-      translateX = interpolate(entranceProgress, [0, 1], [100, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+      translateX = interpolate(slideSpring, [0, 1], [100, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     } else {
-      translateY = interpolate(entranceProgress, [0, 1], [50, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+      // Current word: smooth vertical slide-up
+      translateY = interpolate(slideSpring, [0, 1], [40, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     }
-    
+
     translateX += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'past' ? -100 : highlightStatus === 'future' ? 100 : 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    translateY += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'current' ? 50 : 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    
-    opacity = interpolate(entranceProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' }) - 
-              interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    translateY += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'current' ? -40 : 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+
+    // Opacity fades in quickly at start and holds, then fades out at exit
+    opacity = interpolate(slideSpring, [0, 0.2, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })
+            - interpolate(exitProgress, [0, 0.6, 1], [0, 0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'typewriter') {
     opacity = relativeFrame > 0 ? 1 : 0;
     opacity = opacity - interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
