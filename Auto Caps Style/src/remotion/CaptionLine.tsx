@@ -151,6 +151,11 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         scale = Math.floor(scale * 100) / 100;
       }
 
+      // transformOrigin uses 'center' for vertical so content scales from its visual center.
+      // MATH: With alignItems:center, content (height=contentH) is centered in the container
+      // (height=contentH*scale), placing the content center at contentH*scale/2.
+      // After scale(s) from 'center center': visual top = 0, visual bottom = contentH*scale.
+      // → Visual content EXACTLY fills the container. No overflow, no empty space.
       let transformOrigin = 'center center';
       if (styleConfig.textAlign === 'left') transformOrigin = 'left center';
       if (styleConfig.textAlign === 'right') transformOrigin = 'right center';
@@ -158,7 +163,9 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       content.style.transform = `scale(${scale})`;
       content.style.transformOrigin = transformOrigin;
 
-      // Shrink container height to avoid empty vertical space below scaled content
+      // Container height = visual height of scaled content = contentH * scale.
+      // No topHeadroom needed: overflow:visible lets Devanagari matras show above the container.
+      // Adding topHeadroom would shift the content down and push text lower than expected.
       if (!styleConfig.clipText && scale < 1) {
         container.style.height = `${contentH * scale}px`;
       }
@@ -399,9 +406,18 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
             </div>
           )}
           {currentElements.length > 0 && (
-            // overflow:hidden masks the 40px slide-start position so words are invisible
-            // below the row boundary and cleanly "wipe up" into view — no floating glitch.
-            // paddingBottom gives descenders room so they aren't clipped by the mask.
+            // No clip-path, no overflow:hidden — text is NEVER clipped.
+            // Clipping (overflow:hidden / clip-path with negative insets) caused top/bottom
+            // cutting of Devanagari text because:
+            //   - em units on this div resolve to ~16px (inherited), far too small for
+            //     matras on 380px fonts.
+            //   - clip-path with large negative insets had cross-row rendering issues
+            //     when past/future rows existed in the same flex column.
+            //
+            // Animation still works beautifully:
+            //   - opacity fades 0→1 in the first 20% of entrance (word invisible at start)
+            //   - translateY slides from +slideStart→0 (proportional to font size)
+            // This matches how CapCut / Captions App do it — no clip, smooth slide.
             <div
               className="caption-layout-row"
               style={{
@@ -411,9 +427,6 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
                 justifyContent: 'center',
                 alignItems: 'baseline',
                 minHeight: maxRowHeight,
-                overflow: 'hidden',
-                paddingBottom: '8px',
-                marginBottom: '-8px',
               }}
             >
               {currentElements}
@@ -542,16 +555,12 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
           backgroundColor: styleConfig.highlightStyle === 'subtitle' ? (styleConfig.backgroundColor || '#000000') : 'transparent',
           padding: styleConfig.highlightStyle === 'subtitle' ? '0.2em 0.4em' : '0',
           borderRadius: styleConfig.highlightStyle === 'subtitle' ? '0.2em' : '0',
-          // Slide-up wipe mask: words are invisible below the container boundary
-          // and revealed as they slide up into view. Same paddingBottom/marginBottom
-          // trick as 3-Way Slide to avoid clipping descenders (g, p, y).
-          ...(styleConfig.animationType === 'slide-up' ? {
-            overflow: 'hidden',
-            paddingBottom: '10px',
-            marginBottom: '-10px',
-            paddingTop: '4px',
-            marginTop: '-4px',
-          } : {}),
+          // Slide-up: NO overflow:hidden needed here.
+          // AnimatedItem snaps opacity 0→1 in the first 8% of the slide spring
+          // (line ~727), so words are fully invisible at translateY=+40px start.
+          // overflow:hidden is pure clipping damage: it clips script/calligraphy
+          // font glyphs that overflow to the sides and large descenders at the bottom.
+          // Remove it entirely — the opacity fade already handles the masking.
         }}
       >
         {renderContent()}
@@ -621,12 +630,13 @@ const AnimatedItem: React.FC<{
     extraStyles.fontStyle = 'italic';
   }
 
-  // Always apply padding to prevent the bounding box from jumping during animation and to prevent background-clip from cutting off tall ascenders/descenders (e.g. Nepali fonts)
+  // Always apply padding to prevent the bounding box from jumping during animation and to prevent background-clip from cutting off tall ascenders/descenders (e.g. Nepali/Devanagari fonts).
   // CRITICAL: We MUST use equal negative margins to ensure the padding does NOT increase the physical layout height of the element, which would cause the entire row to jump up/down!
-  extraStyles.paddingTop = '0.2em';
-  extraStyles.paddingBottom = '0.4em';
-  extraStyles.marginTop = '-0.2em';
-  extraStyles.marginBottom = '-0.4em';
+  // 0.35em top is required for Devanagari matras (ा ि ो ां) that sit significantly above the cap-height line.
+  extraStyles.paddingTop = '0.35em';
+  extraStyles.paddingBottom = '0.5em';
+  extraStyles.marginTop = '-0.35em';
+  extraStyles.marginBottom = '-0.5em';
 
   if (isHighlighted && (styleConfig.highlightStyle === 'gradient' || (styleConfig.enableTextGradient && styleConfig.textGradientColors && styleConfig.textGradientColors.length > 0))) {
     if (styleConfig.highlightStyle === 'gradient') {
@@ -823,8 +833,12 @@ const AnimatedItem: React.FC<{
     } else if (highlightStatus === 'future') {
       translateX = interpolate(slideSpring, [0, 1], [100, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     } else {
-      // Current word: smooth vertical slide-up
-      translateY = interpolate(slideSpring, [0, 1], [40, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+      // Current word: smooth vertical slide-up.
+      // No clip mask on the row, so we use opacity (0→1 fast) + a proportional slide
+      // distance (~15% of font size). The opacity fade hides the word at the start so
+      // it appears to emerge from below cleanly without any hard clipping.
+      const slideStartY = styleConfig.fontSize * (styleConfig.accentFontSizeMultiplier ?? 1) * 0.15;
+      translateY = interpolate(slideSpring, [0, 1], [slideStartY, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
     }
 
     translateX += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'past' ? -100 : highlightStatus === 'future' ? 100 : 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
