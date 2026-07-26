@@ -1,4 +1,4 @@
-import { useCurrentFrame, useVideoConfig, spring, interpolate } from 'remotion';
+import { useCurrentFrame, useVideoConfig, spring, interpolate, interpolateColors } from 'remotion';
 import React, { useRef, useLayoutEffect } from 'react';
 import { CaptionSegment, StyleConfig, useProjectStore } from '../store/useProjectStore';
 
@@ -229,8 +229,9 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       
       let isHighlighted = false;
       let karaokeStartFrame = 0;
+      let karaokeEndFrame = 0;
       
-      if (styleConfig.displayMode === 'karaoke') {
+      if (styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative') {
         const totalChars = words.reduce((sum, w) => sum + w.length, 0);
         let startCharIndex = 0;
         for (let i = 0; i < wIdx; i++) {
@@ -238,10 +239,16 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         }
         
         karaokeStartFrame = (startCharIndex / Math.max(1, totalChars)) * durationInFrames;
-        const endFrame = ((startCharIndex + word.length) / Math.max(1, totalChars)) * durationInFrames;
+        karaokeEndFrame = ((startCharIndex + word.length) / Math.max(1, totalChars)) * durationInFrames;
         
-        if (frame >= karaokeStartFrame && (wIdx === words.length - 1 ? frame <= endFrame : frame < endFrame)) {
-          isHighlighted = true;
+        if (styleConfig.displayMode === 'karaoke-cumulative') {
+          if (frame >= karaokeStartFrame) {
+            isHighlighted = true;
+          }
+        } else {
+          if (frame >= karaokeStartFrame && (wIdx === words.length - 1 ? frame <= karaokeEndFrame : frame < karaokeEndFrame)) {
+            isHighlighted = true;
+          }
         }
       } else {
         isHighlighted = (segment.highlightedIndices || []).length > 0
@@ -249,7 +256,49 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
           : (segment.highlightedWords || []).some(hw => hw.toLowerCase() === cleanWord);
       }
       
-      const color = isHighlighted ? styleConfig.accentColor : styleConfig.baseColor;
+      let color = isHighlighted ? styleConfig.accentColor : styleConfig.baseColor;
+      
+      const fadeType = styleConfig.colorFadeType ?? 'in-out';
+      
+      if (styleConfig.displayMode === 'karaoke-cumulative') {
+        if (fadeType === 'none') {
+          color = isHighlighted ? styleConfig.accentColor : styleConfig.baseColor;
+        } else {
+          color = interpolateColors(
+            frame,
+            [karaokeStartFrame, karaokeStartFrame + 4],
+            [styleConfig.baseColor, styleConfig.accentColor]
+          );
+        }
+      } else if (styleConfig.displayMode === 'karaoke') {
+        const duration = karaokeEndFrame - karaokeStartFrame;
+        
+        if (fadeType === 'none' || duration <= 1) {
+          color = isHighlighted ? styleConfig.accentColor : styleConfig.baseColor;
+        } else if (fadeType === 'in') {
+          color = isHighlighted 
+            ? interpolateColors(frame, [karaokeStartFrame, karaokeStartFrame + Math.min(4, duration)], [styleConfig.baseColor, styleConfig.accentColor])
+            : styleConfig.baseColor;
+        } else if (fadeType === 'out') {
+          color = isHighlighted
+            ? interpolateColors(frame, [karaokeEndFrame - Math.min(4, duration), karaokeEndFrame], [styleConfig.accentColor, styleConfig.baseColor])
+            : styleConfig.baseColor;
+        } else {
+          if (duration <= 8) {
+            color = interpolateColors(
+              frame,
+              [karaokeStartFrame, karaokeStartFrame + duration / 2, karaokeEndFrame],
+              [styleConfig.baseColor, styleConfig.accentColor, styleConfig.baseColor]
+            );
+          } else {
+            color = interpolateColors(
+              frame,
+              [karaokeStartFrame, karaokeStartFrame + 4, karaokeEndFrame - 4, karaokeEndFrame],
+              [styleConfig.baseColor, styleConfig.accentColor, styleConfig.accentColor, styleConfig.baseColor]
+            );
+          }
+        }
+      }
       
       const targetMultiplier = isHighlighted 
         ? (styleConfig.accentFontSizeMultiplier ?? 1) 
@@ -260,7 +309,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       // completely preventing the text from visually overlapping adjacent words.
       let fontSize = `${styleConfig.fontSize * targetMultiplier}px`;
       
-      if (styleConfig.displayMode === 'karaoke') {
+      if (styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative') {
         // Karaoke typically wants uniform spacing without scaling to avoid overlapping text
         fontSize = `${styleConfig.fontSize * (styleConfig.baseFontSizeMultiplier ?? 1)}px`;
       }
@@ -287,7 +336,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         margin: `${verticalMargin}em ${mappedSpacing}px`, 
         display: isWhitespace ? 'none' : 'inline-flex', 
         alignItems: 'baseline',
-        minHeight: maxRowHeight,
+        minHeight: (styleConfig.animationType === '3-line-focus') ? undefined : maxRowHeight,
         whiteSpace: 'nowrap' 
       };
 
@@ -304,8 +353,8 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
           <span key={wIdx} style={currentWordStyles}>
             {letters.map((char, cIdx) => {
               const currentItemIndex = itemIndex++;
-              // 3-Way Slide: current words must rise simultaneously — no per-letter stagger
-              const letterDelay = (styleConfig.animationType === '3-way-slide' && highlightStatus === 'current')
+              // 3-Way Slide / 3-Line Focus: current words must rise simultaneously — no per-letter stagger
+              const letterDelay = ((styleConfig.animationType === '3-line-focus') && highlightStatus === 'current')
                 ? 0
                 : currentItemIndex * staggerFrames;
               return (
@@ -346,13 +395,12 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         }
       } else if (styleConfig.displayMode === 'line') {
         delay = 0; // All text animates at once
-      } else if (styleConfig.displayMode === 'karaoke') {
+      } else if (styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative') {
         delay = karaokeStartFrame; // Words animate in sequentially as they are highlighted
       }
 
-      // 3-Way Slide: highlighted (current) words must ALL slide up simultaneously.
-      // Per-word stagger makes them pop up one-by-one below the text box = glitch.
-      if (styleConfig.animationType === '3-way-slide' && highlightStatus === 'current') {
+      // 3-Way Slide / 3-Line Focus: current word springs up, past/future wait in position
+      if ((styleConfig.animationType === '3-line-focus') && highlightStatus === 'current') {
         delay = 0;
       }
       
@@ -381,7 +429,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       );
     });
 
-    if (styleConfig.animationType === '3-way-slide') {
+    if (styleConfig.animationType === '3-line-focus') {
       const pastElements: React.ReactNode[] = [];
       const currentElements: React.ReactNode[] = [];
       const futureElements: React.ReactNode[] = [];
@@ -401,7 +449,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       return (
         <div style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'stretch' }}>
           {pastElements.length > 0 && (
-            <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: shouldWrap ? 'wrap' : 'nowrap', justifyContent: 'flex-start', alignItems: 'baseline', minHeight: maxRowHeight }}>
+            <div className="caption-layout-row" style={{ display: 'flex', flexDirection: 'row', flexWrap: shouldWrap ? 'wrap' : 'nowrap', justifyContent: styleConfig.animationType === '3-line-focus' ? (styleConfig.focusPastAlignment === 'left' ? 'flex-start' : styleConfig.focusPastAlignment === 'right' ? 'flex-end' : 'center') : 'flex-start', alignItems: 'baseline' }}>
               {pastElements}
             </div>
           )}
@@ -424,9 +472,9 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
                 display: 'flex',
                 flexDirection: 'row',
                 flexWrap: shouldWrap ? 'wrap' : 'nowrap',
-                justifyContent: 'center',
+                justifyContent: styleConfig.animationType === '3-line-focus' ? (styleConfig.focusCurrentAlignment === 'left' ? 'flex-start' : styleConfig.focusCurrentAlignment === 'right' ? 'flex-end' : 'center') : 'center',
                 alignItems: 'baseline',
-                minHeight: maxRowHeight,
+                marginTop: '-0.2em',
               }}
             >
               {currentElements}
@@ -437,16 +485,15 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
               display: 'flex', 
               flexDirection: 'row', 
               flexWrap: shouldWrap ? 'wrap' : 'nowrap', 
-              justifyContent: 'flex-end', 
+              justifyContent: styleConfig.animationType === '3-line-focus' ? (styleConfig.focusFutureAlignment === 'left' ? 'flex-start' : styleConfig.focusFutureAlignment === 'right' ? 'flex-end' : 'center') : 'flex-end', 
               alignItems: 'baseline',
-              minHeight: maxRowHeight,
               ...(styleConfig.futureStyleType === 'button' ? {
                 backgroundColor: styleConfig.accentColor,
                 padding: '8px 24px',
                 borderRadius: '24px',
                 boxShadow: 'inset 0 0 12px rgba(255,255,255,0.6)',
                 border: '2px solid rgba(255,255,255,0.3)',
-                alignSelf: 'flex-end',
+                alignSelf: styleConfig.animationType === '3-line-focus' ? (styleConfig.focusFutureAlignment === 'left' ? 'flex-start' : styleConfig.focusFutureAlignment === 'right' ? 'flex-end' : 'center') : 'flex-end',
                 marginTop: '12px'
               } : {})
             }}>
@@ -549,7 +596,7 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
           textAlign: styleConfig.textAlign ?? 'center',
           whiteSpace: ((styleConfig.wrapText ?? true) && styleConfig.lineLayout !== 'single') || segment.text.includes('\n') ? 'normal' : 'nowrap',
           width: (styleConfig.highlightStyle === 'subtitle' || styleConfig.lineLayout === 'single' || styleConfig.lineLayout === 'double') ? 'max-content' : '100%',
-          minWidth: styleConfig.animationType === '3-way-slide' ? 'min-content' : undefined,
+          minWidth: (styleConfig.animationType === '3-line-focus') ? 'min-content' : undefined,
           minHeight: maxRowHeight,
           lineHeight: styleConfig.lineSpacing ?? 1.1,
           backgroundColor: styleConfig.highlightStyle === 'subtitle' ? (styleConfig.backgroundColor || '#000000') : 'transparent',
@@ -818,9 +865,7 @@ const AnimatedItem: React.FC<{
 
     opacity = interpolate(chaosSpring, [0, 0.25, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })
             - interpolate(exitProgress, [0, 1], [0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-  } else if (styleConfig.animationType === '3-way-slide') {
-    // Critically-damped spring: damping / (2 * sqrt(mass * stiffness)) = 20/(2*sqrt(100)) = 1.0
-    // Ratio of exactly 1.0 means zero overshoot — the smoothest possible slide with no bounce.
+  } else if (styleConfig.animationType === '3-line-focus') {
     const slideSpring = spring({
       frame: relativeFrame,
       fps,
@@ -828,21 +873,23 @@ const AnimatedItem: React.FC<{
       durationInFrames: entranceDurationFrames,
     });
 
-    if (highlightStatus === 'past') {
-      translateX = interpolate(slideSpring, [0, 1], [-100, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    } else if (highlightStatus === 'future') {
-      translateX = interpolate(slideSpring, [0, 1], [100, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    } else {
-      // Current word: smooth vertical slide-up.
-      // No clip mask on the row, so we use opacity (0→1 fast) + a proportional slide
-      // distance (~15% of font size). The opacity fade hides the word at the start so
-      // it appears to emerge from below cleanly without any hard clipping.
-      const slideStartY = styleConfig.fontSize * (styleConfig.accentFontSizeMultiplier ?? 1) * 0.15;
+    if (styleConfig.animationType === '3-line-focus') {
+      const slideStartY = styleConfig.fontSize * 0.15;
       translateY = interpolate(slideSpring, [0, 1], [slideStartY, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    }
+      translateY += interpolate(exitProgress, [0, 1], [0, -20], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    } else {
+      if (highlightStatus === 'past') {
+        translateX = interpolate(slideSpring, [0, 1], [-100, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+      } else if (highlightStatus === 'future') {
+        translateX = interpolate(slideSpring, [0, 1], [100, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+      } else {
+        const slideStartY = styleConfig.fontSize * (styleConfig.accentFontSizeMultiplier ?? 1) * 0.15;
+        translateY = interpolate(slideSpring, [0, 1], [slideStartY, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+      }
 
-    translateX += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'past' ? -100 : highlightStatus === 'future' ? 100 : 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
-    translateY += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'current' ? -40 : 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+      translateX += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'past' ? -100 : highlightStatus === 'future' ? 100 : 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+      translateY += interpolate(exitProgress, [0, 1], [0, highlightStatus === 'current' ? -40 : 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    }
 
     // Opacity fades in quickly at start and holds, then fades out at exit
     opacity = interpolate(slideSpring, [0, 0.2, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })

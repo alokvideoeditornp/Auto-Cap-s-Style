@@ -15,10 +15,11 @@ export type CaptionSegment = {
 
 export type AspectRatio = '9:16' | '16:9';
 export type CaptionPosition = 'lower-third' | 'center' | 'top';
-export type AnimationType = 'none' | 'slide-up' | 'pop' | 'fade' | 'typewriter' | 'elastic-bounce' | 'kinetic-clash' | 'chaos-converge' | '3-way-slide';
-export type DisplayMode = 'line' | 'word' | 'letter' | 'karaoke';
+export type AnimationType = 'none' | 'slide-up' | 'pop' | 'fade' | 'typewriter' | 'elastic-bounce' | 'kinetic-clash' | 'chaos-converge' | '3-line-focus';
+export type DisplayMode = 'line' | 'word' | 'letter' | 'karaoke' | 'karaoke-cumulative';
 export type TextAlign = 'left' | 'center' | 'right';
 export type HighlightStyle = 'none' | 'subtitle' | 'glow' | 'highlight' | 'underline' | 'gradient';
+export type ColorFadeType = 'in-out' | 'in' | 'out' | 'none';
 
 export interface StyleConfig {
   font: string;
@@ -35,6 +36,7 @@ export interface StyleConfig {
   displayMode: DisplayMode;
   aspectRatio: AspectRatio;
   highlightStyle: HighlightStyle;
+  colorFadeType?: ColorFadeType;
   glowIntensity: number;
   lineLayout: 'auto' | 'single' | 'double';
   wrapText: boolean;
@@ -79,6 +81,9 @@ export interface StyleConfig {
   futureStyleType?: 'normal' | 'button';
   enableFutureItalic?: boolean;
   highlightTextTransform?: 'uppercase' | 'lowercase' | 'none';
+  focusPastAlignment?: 'left' | 'center' | 'right';
+  focusCurrentAlignment?: 'left' | 'center' | 'right';
+  focusFutureAlignment?: 'left' | 'center' | 'right';
 }
 
 export interface CustomPreset {
@@ -150,7 +155,8 @@ export const defaultStyle: StyleConfig = {
   displayMode: 'word',
   aspectRatio: '9:16', // Default to Reels
   highlightStyle: 'none',
-  glowIntensity: 3,
+  colorFadeType: 'in-out',
+  glowIntensity: 10,
   lineLayout: 'auto',
   wrapText: true,
   clipText: false,
@@ -193,6 +199,9 @@ export const defaultStyle: StyleConfig = {
   futureStyleType: 'normal',
   enableFutureItalic: false,
   highlightTextTransform: 'none',
+  focusPastAlignment: 'center',
+  focusCurrentAlignment: 'center',
+  focusFutureAlignment: 'center',
 };
 
 export const useProjectStore = create<ProjectState>()(

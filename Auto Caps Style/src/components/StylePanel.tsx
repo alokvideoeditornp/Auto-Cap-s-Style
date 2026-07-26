@@ -37,13 +37,13 @@ const CustomPreview = ({ config }: { config: Partial<StyleConfig> }) => {
 
 const PRESETS: { name: string; config: Partial<StyleConfig>; preview: React.ReactNode }[] = [
   {
-    name: '3-Way Slide',
+    name: '3-Way Focus',
     config: {
-      font: 'Montserrat', baseColor: '#ffffff', accentColor: '#FFD400', fontSize: 130, baseFontSizeMultiplier: 0.7, accentFontSizeMultiplier: 1.2, animationType: '3-way-slide', displayMode: 'word', highlightStyle: 'none'
+      font: 'Montserrat', baseColor: '#ffffff', accentColor: '#FFD400', fontSize: 130, baseFontSizeMultiplier: 0.7, accentFontSizeMultiplier: 1.2, animationType: '3-line-focus', displayMode: 'word', highlightStyle: 'none'
     },
     preview: (
       <span style={{ fontFamily: 'Montserrat', color: '#ffffff', fontSize: '12px', fontWeight: 800 }}>
-        3-WAY <span style={{ color: '#FFD400', fontSize: '1.2em' }}>SLIDE</span>
+        3-WAY <span style={{ color: '#FFD400', fontSize: '1.2em' }}>FOCUS</span>
       </span>
     )
   },
@@ -254,6 +254,30 @@ const PRESETS: { name: string; config: Partial<StyleConfig>; preview: React.Reac
     preview: (
       <span style={{ fontFamily: 'Montserrat', color: '#ffffff', fontSize: '13px', fontWeight: 800 }}>
         KARAOKE <span style={{ color: '#ffffff', backgroundColor: '#ffb703', padding: '0px 4px', borderRadius: '4px' }}>WORD</span>
+      </span>
+    )
+  },
+  {
+    name: 'Audio Sync',
+    config: {
+      font: 'Montserrat', baseColor: '#777777', accentColor: '#ffffff', backgroundColor: '#000000', fontSize: 130, baseFontSizeMultiplier: 1.0, accentFontSizeMultiplier: 1.0, animationType: 'none', displayMode: 'karaoke-cumulative', highlightStyle: 'none'
+    },
+    preview: (
+      <span style={{ fontFamily: 'Montserrat', color: '#777777', fontSize: '13px', fontWeight: 800 }}>
+        AUDIO <span style={{ color: '#ffffff' }}>SYNC</span>
+      </span>
+    )
+  },
+  {
+    name: '3-Line Focus',
+    config: {
+      font: 'Montserrat', baseColor: '#ffffff', accentColor: '#38bdf8', backgroundColor: '#000000', fontSize: 130, baseFontSizeMultiplier: 0.7, accentFontSizeMultiplier: 1.0, animationType: '3-line-focus', displayMode: 'word', highlightStyle: 'glow', glowIntensity: 5, lineLayout: 'single'
+    },
+    preview: (
+      <span style={{ fontFamily: 'Montserrat', color: '#ffffff', fontSize: '13px', fontWeight: 800, textAlign: 'center', display: 'flex', flexDirection: 'column' }}>
+        <span style={{ fontSize: '9px', opacity: 0.8 }}>नेपाली</span>
+        <span style={{ color: '#38bdf8', textShadow: '0 0 10px rgba(56,189,248,0.8)' }}>महिला तथा</span>
+        <span style={{ fontSize: '9px', opacity: 0.8 }}>पुरुष</span>
       </span>
     )
   }
@@ -1262,17 +1286,23 @@ export const StylePanel = () => {
         <div className="flex flex-col gap-2">
           <label className="text-sm text-gray-400 font-medium">Stagger Mode (Speed)</label>
           <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
-            {(['line', 'word', 'letter', 'karaoke'] as const).map((mode) => (
+            {(['line', 'word', 'letter', 'karaoke', 'karaoke-cumulative'] as const).map((mode) => (
               <button
                 key={mode}
-                onClick={() => handleUpdate({ displayMode: mode })}
+                onClick={() => {
+                  const updates: Partial<typeof styleConfig> = { displayMode: mode };
+                  if (mode === 'karaoke' || mode === 'karaoke-cumulative') {
+                    updates.staggerSpeedMode = 'math';
+                  }
+                  handleUpdate(updates);
+                }}
                 className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${
                   styleConfig.displayMode === mode 
                     ? 'bg-indigo-600 text-white shadow' 
                     : 'text-gray-400 hover:text-gray-200'
                 }`}
               >
-                {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                {mode === 'karaoke-cumulative' ? 'Karaoke+' : mode.charAt(0).toUpperCase() + mode.slice(1)}
               </button>
             ))}
           </div>
@@ -1282,10 +1312,11 @@ export const StylePanel = () => {
               <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
                 <button
                   onClick={() => handleUpdate({ staggerSpeedMode: 'auto' })}
+                  disabled={styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative'}
                   className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
                     (styleConfig.staggerSpeedMode ?? 'auto') === 'auto'
                       ? 'bg-gray-700 text-white shadow' 
-                      : 'text-gray-500 hover:text-gray-300'
+                      : (styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative') ? 'text-gray-600 cursor-not-allowed opacity-50' : 'text-gray-500 hover:text-gray-300'
                   }`}
                   title="Default fast speed"
                 >
@@ -1293,10 +1324,11 @@ export const StylePanel = () => {
                 </button>
                 <button
                   onClick={() => handleUpdate({ staggerSpeedMode: 'timecode' })}
+                  disabled={styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative'}
                   className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
                     styleConfig.staggerSpeedMode === 'timecode'
                       ? 'bg-gray-700 text-white shadow' 
-                      : 'text-gray-500 hover:text-gray-300'
+                      : (styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative') ? 'text-gray-600 cursor-not-allowed opacity-50' : 'text-gray-500 hover:text-gray-300'
                   }`}
                   title="Stretch perfectly to caption timecode"
                 >
@@ -1316,12 +1348,64 @@ export const StylePanel = () => {
               </div>
             </div>
           )}
+
+          {styleConfig.displayMode === 'karaoke' && (
+            <div className="mt-2">
+              <label className="text-xs text-gray-500 font-medium mb-1 block">Karaoke Color Fade</label>
+              <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
+                <button
+                  onClick={() => handleUpdate({ colorFadeType: 'in-out' })}
+                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                    (styleConfig.colorFadeType ?? 'in-out') === 'in-out'
+                      ? 'bg-gray-700 text-white shadow' 
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                  title="Crossfade in and out"
+                >
+                  Fade In & Out
+                </button>
+                <button
+                  onClick={() => handleUpdate({ colorFadeType: 'in' })}
+                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                    styleConfig.colorFadeType === 'in'
+                      ? 'bg-gray-700 text-white shadow' 
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                  title="Crossfade in, snap out"
+                >
+                  Fade In Only
+                </button>
+                <button
+                  onClick={() => handleUpdate({ colorFadeType: 'out' })}
+                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                    styleConfig.colorFadeType === 'out'
+                      ? 'bg-gray-700 text-white shadow' 
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                  title="Snap in, crossfade out"
+                >
+                  Fade Out Only
+                </button>
+                <button
+                  onClick={() => handleUpdate({ colorFadeType: 'none' })}
+                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+                    styleConfig.colorFadeType === 'none'
+                      ? 'bg-gray-700 text-white shadow' 
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                  title="Snap instantly"
+                >
+                  Non Fade
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">
           <label className="text-sm text-gray-400 font-medium">Entrance Animation</label>
           <div className="grid grid-cols-2 gap-2">
-            {(['none', 'slide-up', 'pop', 'fade', 'typewriter', 'elastic-bounce', 'kinetic-clash', 'chaos-converge', '3-way-slide'] as const).map((type) => (
+            {(['none', 'slide-up', 'pop', 'fade', 'typewriter', 'elastic-bounce', 'kinetic-clash', 'chaos-converge', '3-line-focus'] as const).map((type) => (
               <button
                 key={type}
                 onClick={() => handleUpdate({ animationType: type })}
@@ -1338,10 +1422,73 @@ export const StylePanel = () => {
                  type === 'elastic-bounce' ? 'Elastic Bounce' : 
                  type === 'kinetic-clash' ? 'Kinetic Clash' :
                  type === 'chaos-converge' ? 'Chaos Converge' : 
-                 type === '3-way-slide' ? '3-Way Slide' : 'Typewriter'}
+                 type === '3-line-focus' ? '3-Way Focus' : 'Typewriter'}
               </button>
             ))}
           </div>
+          
+          {styleConfig.animationType === '3-line-focus' && (
+            <div className="flex flex-col gap-3 mt-3 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">3-Way Focus Layout</span>
+              
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-gray-500">Top Line (Past)</label>
+                <div className="flex gap-1">
+                  {(['left', 'center', 'right'] as const).map(align => (
+                    <button
+                      key={align}
+                      onClick={() => handleUpdate({ focusPastAlignment: align })}
+                      className={`flex-1 py-1 text-xs font-medium rounded transition-all ${
+                        (styleConfig.focusPastAlignment || 'center') === align
+                          ? 'bg-gray-700 text-white shadow'
+                          : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      {align.charAt(0).toUpperCase() + align.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-gray-500">Middle Line (Current)</label>
+                <div className="flex gap-1">
+                  {(['left', 'center', 'right'] as const).map(align => (
+                    <button
+                      key={align}
+                      onClick={() => handleUpdate({ focusCurrentAlignment: align })}
+                      className={`flex-1 py-1 text-xs font-medium rounded transition-all ${
+                        (styleConfig.focusCurrentAlignment || 'center') === align
+                          ? 'bg-indigo-600 text-white shadow'
+                          : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      {align.charAt(0).toUpperCase() + align.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-gray-500">Bottom Line (Future)</label>
+                <div className="flex gap-1">
+                  {(['left', 'center', 'right'] as const).map(align => (
+                    <button
+                      key={align}
+                      onClick={() => handleUpdate({ focusFutureAlignment: align })}
+                      className={`flex-1 py-1 text-xs font-medium rounded transition-all ${
+                        (styleConfig.focusFutureAlignment || 'center') === align
+                          ? 'bg-gray-700 text-white shadow'
+                          : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                      }`}
+                    >
+                      {align.charAt(0).toUpperCase() + align.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-700">
