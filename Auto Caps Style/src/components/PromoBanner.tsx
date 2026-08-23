@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SingleAd {
@@ -58,6 +58,7 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   const [isDismissed, setIsDismissed] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [loadedImages, setLoadedImages] = useState<{ [key: number]: boolean }>({});
+  const isOpeningRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -121,26 +122,25 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
 
   const currentAd = adList[currentIndex] || adList[0];
 
-  const handleOpenLink = (e: React.MouseEvent, link?: string) => {
+  const handleOpenLink = async (e: React.MouseEvent, link?: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!link) return;
+    if (!link || isOpeningRef.current) return;
+
+    isOpeningRef.current = true;
+    setTimeout(() => {
+      isOpeningRef.current = false;
+    }, 1500);
 
     const targetUrl = link.trim();
 
-    // 1. Call background server API (opens in system default browser)
-    fetch('/api/open-external', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: targetUrl })
-    }).catch(() => {});
-
-    // 2. Trigger hash navigation for Qt WebEngine listener
-    window.location.hash = 'openBrowser=' + encodeURIComponent(targetUrl);
-
-    // 3. Fallback window.open
+    // Single unified API call to open in default browser (Opens exactly 1 tab)
     try {
-      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      await fetch('/api/open-external', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: targetUrl })
+      });
     } catch (_) {}
   };
 
