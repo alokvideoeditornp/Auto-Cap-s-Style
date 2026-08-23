@@ -26,6 +26,14 @@ const FALLBACK_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Aut
 const resolveDirectImageUrl = (url?: string): string => {
   if (!url) return '';
   let clean = url.trim();
+
+  // If it's a relative path like "images/ad1.png" or "banner.png"
+  if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+    clean = clean.replace(/^\.\//, '').replace(/^\//, '');
+    return `https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/${clean}`;
+  }
+
+  // If it's a GitHub URL
   if (clean.includes('github.com') && clean.includes('/blob/')) {
     clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
   } else if (clean.includes('github.com') && clean.includes('/raw/')) {
