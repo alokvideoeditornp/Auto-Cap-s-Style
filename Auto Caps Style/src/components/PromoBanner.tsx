@@ -70,7 +70,7 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
 
     const targetUrl = adConfig.link.trim();
 
-    // 1. Call background server API (opens in system default browser like Chrome / Edge)
+    // 1. Call background server API (opens in system default browser)
     fetch('/api/open-external', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -87,43 +87,48 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
   };
 
   return (
-    <div className={`relative group overflow-hidden rounded-xl border border-[#2b2b36] bg-[#181820] shadow-lg transition-all duration-300 hover:border-blue-500/50 hover:shadow-blue-500/10 ${className}`}>
-      {/* Dismiss Button */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsDismissed(true);
-        }}
-        title="Dismiss ad"
-        className="absolute top-2 right-2 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-gray-300 backdrop-blur-md transition-all hover:bg-black hover:text-white"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
+    <div className={`group overflow-hidden rounded-xl border border-[#2b2b36] bg-[#181820] p-2 shadow-lg transition-all duration-300 hover:border-blue-500/50 hover:shadow-blue-500/10 ${className}`}>
+      {/* Top Header Row - Badge and Close Button sitting neatly ABOVE the image */}
+      <div className="flex items-center justify-between mb-1.5 px-1">
+        {adConfig.badge ? (
+          <span className="rounded bg-blue-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-sm">
+            {adConfig.badge}
+          </span>
+        ) : (
+          <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400">
+            Sponsored
+          </span>
+        )}
 
-      {/* Optional Badge */}
-      {adConfig.badge && (
-        <div className="absolute top-2 left-2 z-10 rounded bg-blue-600/90 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
-          {adConfig.badge}
-        </div>
-      )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsDismissed(true);
+          }}
+          title="Dismiss ad"
+          className="flex h-5 w-5 items-center justify-center rounded-md text-gray-400 hover:bg-[#282834] hover:text-white transition-all"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </div>
 
-      {/* Clickable Image */}
+      {/* Clickable Image - 100% Unobstructed & Clean */}
       <div 
         onClick={handleClick}
-        className="block cursor-pointer overflow-hidden transition-transform duration-300 hover:scale-[1.01]"
+        className="relative block cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 hover:scale-[1.01]"
       >
         <img
           src={adConfig.imageUrl}
           alt={adConfig.altText || 'Sponsored Promotion'}
           onLoad={() => setImageLoaded(true)}
-          className={`w-full h-auto object-cover rounded-xl transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 h-24 bg-[#21212a] animate-pulse'}`}
+          className={`w-full h-auto object-cover rounded-lg transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 h-20 bg-[#21212a] animate-pulse'}`}
         />
         
-        {/* Hover overlay button */}
+        {/* Hover overlay hint */}
         {adConfig.link && (
           <div 
             onClick={handleClick}
-            className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-md bg-black/80 hover:bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-md backdrop-blur-md transition-all duration-200"
+            className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-md bg-black/80 hover:bg-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-md backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-200"
           >
             <span>Open</span>
             <ExternalLink className="h-3 w-3" />
