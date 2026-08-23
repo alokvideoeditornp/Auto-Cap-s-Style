@@ -1,24 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useProjectStore, StyleConfig, defaultStyle } from '@/store/useProjectStore';
-import { PaintBucket, Type, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight, Check, Trash2, Plus, Download, Upload, Square, RotateCcw } from 'lucide-react';
+import { PaintBucket, Type, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight, Check, Trash2, Plus, Download, Upload, Square, RotateCcw, Sparkles, Film, Layout, Zap, Sliders, Layers } from 'lucide-react';
 
-const AccordionItem = ({ title, children, isOpen, onToggle }: { title: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void }) => {
+const AccordionItem = ({ title, icon, badge, children, isOpen, onToggle }: { title: string, icon?: React.ReactNode, badge?: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void }) => {
   return (
-    <div className="border border-gray-700 rounded-lg mb-2 bg-gray-900/50">
+    <div className={`border transition-all duration-200 rounded-xl mb-2.5 overflow-hidden ${isOpen ? 'border-blue-500/40 bg-[#18181c]/70 shadow-lg shadow-black/20' : 'border-[#2b2b34] bg-[#18181c]/40 hover:border-[#383844]'}`}>
       <button 
         onClick={onToggle}
-        className={`w-full flex items-center justify-between p-3 bg-gray-800 hover:bg-gray-750 transition-colors ${isOpen ? 'rounded-t-lg' : 'rounded-lg'}`}
+        className={`w-full flex items-center justify-between px-3.5 py-3 transition-colors ${isOpen ? 'bg-[#212126]/80 text-white' : 'bg-[#212126]/60 text-gray-300 hover:text-white hover:bg-[#212126]/40'}`}
       >
-        <span className="font-semibold text-gray-200 text-sm">{title}</span>
-        {isOpen ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+        <div className="flex items-center gap-2.5">
+          {icon && <span className={isOpen ? 'text-blue-400' : 'text-gray-400'}>{icon}</span>}
+          <span className="font-semibold text-sm tracking-wide">{title}</span>
+          {badge && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+              {badge}
+            </span>
+          )}
+        </div>
+        <div className="p-1 rounded-md text-gray-400 hover:text-gray-200">
+          {isOpen ? <ChevronUp className="w-4 h-4 text-blue-400" /> : <ChevronDown className="w-4 h-4" />}
+        </div>
       </button>
       {isOpen && (
-        <div className="p-4 border-t border-gray-700 bg-gray-900/30 flex flex-col gap-5 rounded-b-lg">
+        <div className="p-4 flex flex-col gap-4 border-t border-[#2b2b34]/80 bg-[#18181c]/40">
           {children}
         </div>
       )}
     </div>
+  );
+};
+
+export const CustomCheckbox: React.FC<{
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  className?: string;
+}> = ({ checked, onChange, label, className = '' }) => {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`flex items-center gap-2.5 cursor-pointer text-xs font-medium text-left transition-all select-none group py-0.5 ${className}`}
+    >
+      <div
+        className={`w-4 h-4 rounded-[5px] flex items-center justify-center transition-all border shrink-0 ${
+          checked
+            ? 'bg-blue-600 border-blue-500 text-white shadow-sm shadow-blue-600/30'
+            : 'bg-[#18181c] border-[#3e3e4c] text-transparent hover:border-[#525264] group-hover:bg-[#202026]'
+        }`}
+      >
+        <Check className={`w-3 h-3 stroke-[3] transition-transform ${checked ? 'scale-100' : 'scale-0'}`} />
+      </div>
+      <span className={`transition-colors text-xs ${checked ? 'text-gray-200 font-semibold' : 'text-gray-400 group-hover:text-gray-300'}`}>
+        {label}
+      </span>
+    </button>
   );
 };
 
@@ -315,18 +353,18 @@ const CustomFontPicker = ({ fonts, value, onChange, isLoading }: { fonts: FontGr
     <div className="relative" onClick={(e) => e.stopPropagation()}>
       <button 
         onClick={() => { setIsOpen(!isOpen); setSearch(''); }}
-        className="w-full flex items-center justify-between bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-full flex items-center justify-between bg-[#18181c] border border-[#2e2e38] rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         <span className="truncate">{value}</span>
         <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '300px' }}>
-          <div className="p-2 border-b border-gray-700 bg-gray-800">
+        <div className="absolute z-50 w-full mt-1 bg-[#18181c] border border-[#2e2e38] rounded-lg shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '300px' }}>
+          <div className="p-2 border-b border-[#2e2e38] bg-[#212126]">
             <input 
               autoFocus
-              className="w-full bg-gray-900 text-white px-3 py-1.5 text-sm rounded border border-gray-700 focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[#18181c] text-white px-3 py-1.5 text-sm rounded border border-[#2e2e38] focus:outline-none focus:border-blue-500"
               placeholder="Search fonts..."
               value={search}
               onChange={e => { setSearch(e.target.value); setRenderLimit(50); }}
@@ -342,10 +380,10 @@ const CustomFontPicker = ({ fonts, value, onChange, isLoading }: { fonts: FontGr
                     onChange(font.family);
                     setIsOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-3 hover:bg-indigo-600/20 flex items-center justify-between border-b border-gray-700/50 last:border-b-0 transition-colors ${value === font.family ? 'bg-indigo-600/30 text-white' : 'text-gray-300'}`}
+                  className={`w-full text-left px-4 py-3 hover:bg-blue-600/20 flex items-center justify-between border-b border-[#2e2e38]/50 last:border-b-0 transition-colors ${value === font.family ? 'bg-blue-600/30 text-white' : 'text-gray-300'}`}
                 >
                   <span style={{ fontFamily: `"${font.family}", sans-serif`, fontSize: '16px' }}>{font.family}</span>
-                  {value === font.family && <Check className="w-4 h-4 text-indigo-400" />}
+                  {value === font.family && <Check className="w-4 h-4 text-blue-400" />}
                 </button>
             ))}
 
@@ -380,7 +418,7 @@ const CustomColorPicker = ({
         <label className="text-[10px] leading-tight text-gray-400 font-medium flex-1 truncate" title={label}>{label}</label>
         <button 
           onClick={() => onSave(value)}
-          className="shrink-0 text-[12px] font-bold w-4 h-4 flex items-center justify-center bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 rounded border border-indigo-500/30 transition leading-none cursor-pointer"
+          className="shrink-0 text-[12px] font-bold w-4 h-4 flex items-center justify-center bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 rounded border border-blue-500/30 transition leading-none cursor-pointer"
           title="Save this color to your palette"
         >
           +
@@ -390,7 +428,7 @@ const CustomColorPicker = ({
         type="color" 
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-10 rounded-lg cursor-pointer bg-gray-900 border border-gray-700 p-1"
+        className="w-full h-10 rounded-lg cursor-pointer bg-[#18181c] border border-[#2e2e38] p-1"
       />
       {savedColors.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1">
@@ -569,23 +607,32 @@ export const StylePanel = () => {
   };
 
   return (
-    <div className="bg-gray-800 rounded-xl p-6 shadow-xl border border-gray-700/50 flex flex-col transform-gpu">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold flex items-center gap-2">
-          <PaintBucket className="w-5 h-5 text-indigo-400" />
-          Design & Animations
-        </h3>
+    <div className="bg-[#18181c]/90 rounded-2xl p-5 shadow-2xl border border-[#2b2b34] flex flex-col transform-gpu">
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#2b2b34]/80">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400">
+            <PaintBucket className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white leading-tight">Design & Animations</h3>
+            <span className="text-[10px] font-semibold text-blue-400/80 tracking-wider">Alok Video Editor</span>
+          </div>
+        </div>
         <div className="flex gap-2 items-center">
           <button 
             onClick={handleToggleAutoCollapse}
-            className={`text-[10px] px-2 py-1 rounded transition border ${autoCollapsePanels ? 'bg-indigo-900/40 border-indigo-500/50 text-indigo-300' : 'bg-gray-700/50 border-gray-600/50 text-gray-400 hover:text-gray-200'}`}
+            className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg transition-all border ${
+              autoCollapsePanels 
+                ? 'bg-blue-600/20 border-blue-500/50 text-blue-300' 
+                : 'bg-[#212126]/80 border-[#2e2e38] text-gray-400 hover:text-gray-200'
+            }`}
             title="When ON, opening a panel automatically closes others"
           >
             Auto Collapse: {autoCollapsePanels ? 'ON' : 'OFF'}
           </button>
           <button 
             onClick={() => setShowResetModal(true)} 
-            className="text-xs px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-gray-200 transition font-medium"
+            className="text-xs px-2.5 py-1 bg-[#212126] hover:bg-[#282830] hover:text-white border border-[#2e2e38] rounded-lg text-gray-300 transition font-medium"
             title="Reset Options"
           >
             Reset
@@ -594,36 +641,42 @@ export const StylePanel = () => {
       </div>
 
       {isEditingIndividual ? (
-        <div className="bg-indigo-600/20 border border-indigo-500/50 text-indigo-200 px-3 py-2 rounded-lg text-xs font-semibold mb-4 flex items-center justify-between">
+        <div className="bg-blue-600/20 border border-blue-500/50 text-blue-200 px-3.5 py-2 rounded-xl text-xs font-semibold mb-4 flex items-center justify-between shadow-sm">
           <span>Editing Individual Caption</span>
           <button 
             onClick={() => updateCaptionSegment(selectedCaptionId!, { customStyle: {} })}
-            className="bg-indigo-500/30 hover:bg-indigo-500/50 px-2 py-1 rounded text-[10px] uppercase tracking-wider"
+            className="bg-blue-500/30 hover:bg-blue-500/50 px-2 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wider transition"
           >
             Reset
           </button>
         </div>
       ) : (
-        <div className="bg-gray-700/30 text-gray-400 px-3 py-2 rounded-lg text-xs font-semibold mb-4 text-center">
+        <div className="bg-[#212126]/40 border border-[#2b2b34] text-gray-400 px-3.5 py-2 rounded-xl text-xs font-semibold mb-4 text-center">
           Editing Global Styles (All Captions)
         </div>
       )}
 
-      <AccordionItem title="Video Settings" isOpen={openPanels.includes("Video Settings")} onToggle={() => togglePanel("Video Settings")}>
+      <AccordionItem 
+        title="Video Settings" 
+        icon={<Film className="w-4 h-4" />} 
+        badge={styleConfig.aspectRatio || '9:16'}
+        isOpen={openPanels.includes("Video Settings")} 
+        onToggle={() => togglePanel("Video Settings")}
+      >
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium">Video Format</label>
-          <div className="flex gap-2">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Video Format</label>
+          <div className="grid grid-cols-2 gap-2 bg-[#141416]/80 p-1.5 rounded-xl border border-[#2b2b34]">
             {(['9:16', '16:9'] as const).map((ratio) => (
               <button
                 key={ratio}
                 onClick={() => handleUpdate({ aspectRatio: ratio })}
-                className={`flex-1 py-2 rounded-lg border text-sm transition-colors ${
+                className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all text-center flex items-center justify-center gap-1.5 ${
                   styleConfig.aspectRatio === ratio
-                    ? 'bg-indigo-600 border-indigo-500 text-white'
-                    : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                    : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
                 }`}
               >
-                {ratio === '9:16' ? 'Reels (9:16)' : 'YouTube (16:9)'}
+                {ratio === '9:16' ? 'Reels / Shorts (9:16)' : 'YouTube (16:9)'}
               </button>
             ))}
           </div>
@@ -631,12 +684,18 @@ export const StylePanel = () => {
 
       </AccordionItem>
 
-      <AccordionItem title="Quick Presets" isOpen={openPanels.includes("Quick Presets")} onToggle={() => togglePanel("Quick Presets")}>
-        <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700 mb-2">
+      <AccordionItem 
+        title="Quick Presets" 
+        icon={<Sparkles className="w-4 h-4" />} 
+        badge={styleConfig.activePreset}
+        isOpen={openPanels.includes("Quick Presets")} 
+        onToggle={() => togglePanel("Quick Presets")}
+      >
+        <div className="flex bg-[#141416]/80 p-1 rounded-xl border border-[#2b2b34] mb-3">
           <button
             onClick={() => setPresetTab('system')}
             className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
-              presetTab === 'system' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'
+              presetTab === 'system' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'
             }`}
           >
             System
@@ -644,7 +703,7 @@ export const StylePanel = () => {
           <button
             onClick={() => setPresetTab('custom')}
             className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all ${
-              presetTab === 'custom' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'
+              presetTab === 'custom' ? 'bg-blue-600 text-white shadow' : 'text-gray-400 hover:text-gray-200'
             }`}
           >
             Custom
@@ -667,16 +726,16 @@ export const StylePanel = () => {
                   };
                   handleUpdate(baseReset);
                 }}
-                className={`relative h-16 bg-gray-900 border rounded-lg overflow-hidden group transition ${
+                className={`relative h-16 bg-[#18181c] border rounded-lg overflow-hidden group transition ${
                   styleConfig.activePreset === preset.name 
-                    ? 'border-indigo-500 ring-2 ring-indigo-500' 
-                    : 'border-gray-700 hover:border-indigo-500'
+                    ? 'border-blue-500 ring-2 ring-blue-500' 
+                    : 'border-[#2e2e38] hover:border-blue-500'
                 }`}
               >
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 group-hover:bg-gray-750 transition pb-4 pointer-events-none">
+                <div className="absolute inset-0 flex items-center justify-center bg-[#212126] group-hover:bg-[#282830] transition pb-4 pointer-events-none">
                   {preset.preview}
                 </div>
-                <div className="absolute bottom-0 inset-x-0 bg-black/80 py-1.5 flex items-center justify-center  border-t border-gray-700/50 z-10">
+                <div className="absolute bottom-0 inset-x-0 bg-black/80 py-1.5 flex items-center justify-center  border-t border-[#2e2e38]/50 z-10">
                   <span className="text-[9px] font-bold text-gray-100 tracking-wider uppercase drop-shadow-md">{preset.name}</span>
                 </div>
               </button>
@@ -690,7 +749,7 @@ export const StylePanel = () => {
                 placeholder="Name your current style..."
                 value={newPresetName}
                 onChange={(e) => setNewPresetName(e.target.value)}
-                className="flex-1 min-w-0 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="flex-1 min-w-0 bg-[#18181c] border border-[#2e2e38] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
               />
               <button
                 onClick={() => {
@@ -700,7 +759,7 @@ export const StylePanel = () => {
                   }
                 }}
                 disabled={!newPresetName.trim()}
-                className="shrink-0 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:text-gray-500 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1 transition"
+                className="shrink-0 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500 text-white px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-1 transition"
               >
                 <Plus className="w-4 h-4" /> Save
               </button>
@@ -710,13 +769,13 @@ export const StylePanel = () => {
               <button
                 onClick={handleExportPresets}
                 disabled={customPresets.length === 0}
-                className="flex-1 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-gray-700 transition"
+                className="flex-1 bg-[#212126] hover:bg-[#2e2e38] disabled:opacity-50 text-gray-300 px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-[#2e2e38] transition"
                 title="Export all Custom Presets to a file"
               >
                 <Download className="w-3 h-3" /> Export Presets
               </button>
               
-              <label className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-gray-700 transition cursor-pointer">
+              <label className="flex-1 bg-[#212126] hover:bg-[#2e2e38] text-gray-300 px-3 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 border border-[#2e2e38] transition cursor-pointer">
                 <Upload className="w-3 h-3" /> Import Presets
                 <input
                   type="file"
@@ -743,16 +802,16 @@ export const StylePanel = () => {
                           presetName: preset.name
                         });
                       }}
-                      className={`relative w-full h-16 bg-gray-900 border rounded-lg overflow-hidden transition ${
+                      className={`relative w-full h-16 bg-[#18181c] border rounded-lg overflow-hidden transition ${
                         styleConfig.activePreset === preset.name 
-                          ? 'border-indigo-500 ring-2 ring-indigo-500' 
-                          : 'border-gray-700 hover:border-indigo-500'
+                          ? 'border-blue-500 ring-2 ring-blue-500' 
+                          : 'border-[#2e2e38] hover:border-blue-500'
                       }`}
                     >
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-800 group-hover:bg-gray-750 transition pb-4 pointer-events-none">
+                      <div className="absolute inset-0 flex items-center justify-center bg-[#212126] group-hover:bg-[#282830] transition pb-4 pointer-events-none">
                         <CustomPreview config={preset.config} />
                       </div>
-                      <div className="absolute bottom-0 inset-x-0 bg-black/80 py-1.5 flex items-center justify-center  border-t border-gray-700/50 z-10">
+                      <div className="absolute bottom-0 inset-x-0 bg-black/80 py-1.5 flex items-center justify-center  border-t border-[#2e2e38]/50 z-10">
                         <span className="text-[9px] font-bold text-gray-100 tracking-wider uppercase drop-shadow-md truncate px-1">{preset.name}</span>
                       </div>
                     </button>
@@ -764,11 +823,17 @@ export const StylePanel = () => {
         )}
       </AccordionItem>
 
-      <AccordionItem title="Typography & Colors" isOpen={openPanels.includes("Typography & Colors")} onToggle={() => togglePanel("Typography & Colors")}>
+      <AccordionItem 
+        title="Typography & Colors" 
+        icon={<Type className="w-4 h-4" />} 
+        badge={styleConfig.font}
+        isOpen={openPanels.includes("Typography & Colors")} 
+        onToggle={() => togglePanel("Typography & Colors")}
+      >
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <label className="text-sm text-gray-400 font-medium flex items-center gap-1">
-              <Type className="w-4 h-4" /> Font Family
+            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Type className="w-3.5 h-3.5 text-blue-400" /> Font Family
             </label>
             {isLoadingFonts && (
               <span className="text-[10px] uppercase font-bold text-gray-400">Loading Fonts...</span>
@@ -814,7 +879,7 @@ export const StylePanel = () => {
                       }
                       handleUpdate(updates);
                     }}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-200"
+                    className="w-full bg-[#141416]/80 border border-[#2b2b34] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-200"
                   >
                     {availableWeights.map(w => (
                       <option key={w.value} value={w.value}>{w.label} ({w.value})</option>
@@ -827,20 +892,20 @@ export const StylePanel = () => {
           })()}
         </div>
 
-        <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-gray-700">
-          <label className="text-sm text-gray-400 font-medium flex justify-between items-center">
+        <div className="flex flex-col gap-2 mt-1 pt-3 border-t border-[#2b2b34]">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex justify-between items-center">
             <span>Separate Highlight Font</span>
             <button
               onClick={() => handleUpdate({ enableHighlightFont: !styleConfig.enableHighlightFont })}
-              className={`w-10 h-5 rounded-full relative transition-colors ${styleConfig.enableHighlightFont ? 'bg-indigo-500' : 'bg-gray-700'}`}
+              className={`w-9 h-5 rounded-full relative transition-colors ${styleConfig.enableHighlightFont ? 'bg-blue-500' : 'bg-gray-700'}`}
             >
-              <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${styleConfig.enableHighlightFont ? 'translate-x-5' : 'translate-x-0'}`} />
+              <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${styleConfig.enableHighlightFont ? 'translate-x-4' : 'translate-x-0'}`} />
             </button>
           </label>
           
           {styleConfig.enableHighlightFont && (
-            <div className="mt-2 bg-gray-900/50 p-3 rounded-lg border border-gray-700">
-              <label className="text-xs text-gray-400 mb-2 block">Highlight Font Family</label>
+            <div className="mt-2 bg-[#141416]/80 p-3 rounded-xl border border-[#2b2b34]">
+              <label className="text-[11px] text-gray-400 mb-2 block font-medium">Highlight Font Family</label>
               <CustomFontPicker 
                 fonts={systemFonts}
                 value={styleConfig.highlightFont}
@@ -866,7 +931,7 @@ export const StylePanel = () => {
                       <select
                         value={styleConfig.highlightFontWeight || 800}
                         onChange={(e) => handleUpdate({ highlightFontWeight: parseInt(e.target.value, 10) })}
-                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-200"
+                        className="w-full bg-[#141416] border border-[#2b2b34] rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-200"
                       >
                         {availableWeights.map(w => (
                           <option key={w.value} value={w.value}>{w.label} ({w.value})</option>
@@ -881,17 +946,17 @@ export const StylePanel = () => {
           )}
         </div>
 
-        <div className="flex flex-col gap-2 mt-2">
-          <label className="text-sm text-gray-400 font-medium">Text Alignment</label>
-          <div className="flex gap-2">
+        <div className="flex flex-col gap-2 mt-1">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Text Alignment</label>
+          <div className="grid grid-cols-3 gap-1.5 bg-[#141416]/80 p-1.5 rounded-xl border border-[#2b2b34]">
             {(['left', 'center', 'right'] as const).map((align) => (
               <button
                 key={align}
                 onClick={() => handleUpdate({ textAlign: align })}
-                className={`flex-1 flex justify-center items-center py-2 rounded-lg border transition-colors ${
+                className={`py-2 flex justify-center items-center rounded-lg transition-all ${
                   styleConfig.textAlign === align
-                    ? 'bg-indigo-600 border-indigo-500 text-white'
-                    : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                    : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
                 }`}
                 title={`Align ${align}`}
               >
@@ -902,12 +967,12 @@ export const StylePanel = () => {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium flex justify-between items-center">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex justify-between items-center">
             <span>Base Font Size</span>
             <div className="flex items-center gap-2">
-              <span className="text-indigo-400">{styleConfig.fontSize}px</span>
+              <span className="text-blue-400 font-mono text-xs">{styleConfig.fontSize}px</span>
               <button onClick={() => handleUpdate({ fontSize: defaultStyle.fontSize })} className="text-gray-500 hover:text-white" title="Reset to default">
-                <RotateCcw size={14} />
+                <RotateCcw size={12} />
               </button>
             </div>
           </label>
@@ -917,17 +982,17 @@ export const StylePanel = () => {
             max="200" 
             value={styleConfig.fontSize}
             onChange={(e) => handleUpdate({ fontSize: parseInt(e.target.value) })}
-            className="w-full accent-indigo-500"
+            className="w-full accent-blue-500"
           />
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium flex justify-between items-center">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex justify-between items-center">
             <span>Small Font Size Multiplier</span>
             <div className="flex items-center gap-2">
-              <span className="text-indigo-400">{styleConfig.baseFontSizeMultiplier}x</span>
+              <span className="text-blue-400 font-mono text-xs">{styleConfig.baseFontSizeMultiplier}x</span>
               <button onClick={() => handleUpdate({ baseFontSizeMultiplier: defaultStyle.baseFontSizeMultiplier })} className="text-gray-500 hover:text-white" title="Reset to default">
-                <RotateCcw size={14} />
+                <RotateCcw size={12} />
               </button>
             </div>
           </label>
@@ -938,17 +1003,17 @@ export const StylePanel = () => {
             step="0.1"
             value={styleConfig.baseFontSizeMultiplier}
             onChange={(e) => handleUpdate({ baseFontSizeMultiplier: parseFloat(e.target.value) })}
-            className="w-full accent-indigo-500"
+            className="w-full accent-blue-500"
           />
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium flex justify-between items-center">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex justify-between items-center">
             <span>Highlight Size Multiplier</span>
             <div className="flex items-center gap-2">
-              <span className="text-indigo-400">{styleConfig.accentFontSizeMultiplier}x</span>
+              <span className="text-blue-400 font-mono text-xs">{styleConfig.accentFontSizeMultiplier}x</span>
               <button onClick={() => handleUpdate({ accentFontSizeMultiplier: defaultStyle.accentFontSizeMultiplier })} className="text-gray-500 hover:text-white" title="Reset to default">
-                <RotateCcw size={14} />
+                <RotateCcw size={12} />
               </button>
             </div>
           </label>
@@ -959,17 +1024,17 @@ export const StylePanel = () => {
             step="0.1"
             value={styleConfig.accentFontSizeMultiplier}
             onChange={(e) => handleUpdate({ accentFontSizeMultiplier: parseFloat(e.target.value) })}
-            className="w-full accent-indigo-500"
+            className="w-full accent-blue-500"
           />
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium flex justify-between items-center">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex justify-between items-center">
             <span>Line Spacing</span>
             <div className="flex items-center gap-2">
-              <span className="text-indigo-400">{styleConfig.lineSpacing ?? 1.1}</span>
+              <span className="text-blue-400 font-mono text-xs">{styleConfig.lineSpacing ?? 1.1}</span>
               <button onClick={() => handleUpdate({ lineSpacing: defaultStyle.lineSpacing ?? 1.1 })} className="text-gray-500 hover:text-white" title="Reset to default">
-                <RotateCcw size={14} />
+                <RotateCcw size={12} />
               </button>
             </div>
           </label>
@@ -980,17 +1045,17 @@ export const StylePanel = () => {
             step="0.1"
             value={styleConfig.lineSpacing ?? 1.1}
             onChange={(e) => handleUpdate({ lineSpacing: parseFloat(e.target.value) })}
-            className="w-full accent-indigo-500"
+            className="w-full accent-blue-500"
           />
         </div>
 
-        <div className="flex flex-col gap-2 mt-2">
-          <label className="text-sm text-gray-400 font-medium flex justify-between items-center">
+        <div className="flex flex-col gap-2 mt-1">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex justify-between items-center">
             <span>Word Spacing</span>
             <div className="flex items-center gap-2">
-              <span className="text-indigo-400">{styleConfig.wordSpacing ?? 8}px</span>
+              <span className="text-blue-400 font-mono text-xs">{styleConfig.wordSpacing ?? 8}px</span>
               <button onClick={() => handleUpdate({ wordSpacing: defaultStyle.wordSpacing ?? 8 })} className="text-gray-500 hover:text-white" title="Reset to default">
-                <RotateCcw size={14} />
+                <RotateCcw size={12} />
               </button>
             </div>
           </label>
@@ -1001,12 +1066,11 @@ export const StylePanel = () => {
             step="1"
             value={styleConfig.wordSpacing ?? 8}
             onChange={(e) => handleUpdate({ wordSpacing: parseInt(e.target.value) })}
-            className="w-full accent-indigo-500"
+            className="w-full accent-blue-500"
           />
         </div>
 
-
-        <div className="grid grid-cols-3 gap-4 mt-2">
+        <div className="grid grid-cols-3 gap-3 mt-2">
           <CustomColorPicker 
             label="Text Color"
             value={styleConfig.baseColor}
@@ -1016,7 +1080,7 @@ export const StylePanel = () => {
             onRemove={removeCustomColor}
           />
           <CustomColorPicker 
-            label="Highlighted Text Color"
+            label="Highlight Text"
             value={styleConfig.accentColor}
             onChange={(c) => handleUpdate({ accentColor: c })}
             savedColors={customColors}
@@ -1024,7 +1088,7 @@ export const StylePanel = () => {
             onRemove={removeCustomColor}
           />
           <CustomColorPicker 
-            label={styleConfig.highlightStyle === 'underline' ? 'Underline Color' : 'Highlight Box Color'}
+            label={styleConfig.highlightStyle === 'underline' ? 'Underline' : 'Highlight Box'}
             value={styleConfig.backgroundColor}
             onChange={(c) => handleUpdate({ backgroundColor: c })}
             savedColors={customColors}
@@ -1033,17 +1097,17 @@ export const StylePanel = () => {
           />
         </div>
 
-        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-700">
-          <label className="text-sm text-gray-400 font-medium">Highlight Style</label>
-          <div className="grid grid-cols-2 gap-2">
+        <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-[#2b2b34]">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Highlight Style</label>
+          <div className="grid grid-cols-3 gap-1.5 bg-[#141416]/80 p-1.5 rounded-xl border border-[#2b2b34]">
             {(['none', 'subtitle', 'glow', 'highlight', 'underline', 'gradient'] as const).map((hStyle) => (
               <button
                 key={hStyle}
                 onClick={() => handleUpdate({ highlightStyle: hStyle })}
-                className={`py-2 text-sm font-medium rounded-lg border transition-all ${
+                className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
                   styleConfig.highlightStyle === hStyle
-                    ? 'bg-indigo-600 border-indigo-500 text-white shadow'
-                    : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                    : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
                 }`}
               >
                 {hStyle.charAt(0).toUpperCase() + hStyle.slice(1)}
@@ -1051,22 +1115,22 @@ export const StylePanel = () => {
             ))}
           </div>
           {styleConfig.highlightStyle === 'gradient' && (
-            <div className="flex flex-col gap-3 mt-3 p-3 bg-gray-800 rounded-lg border border-gray-700">
+            <div className="flex flex-col gap-3 mt-3 p-3 bg-[#212126] rounded-lg border border-[#2e2e38]">
               <label className="text-sm font-bold text-gray-300">Gradient Settings</label>
               
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-gray-400">Type</label>
                 <div className="flex gap-2">
-                  <button onClick={() => handleUpdate({ gradientType: 'linear' })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientType !== 'radial' ? 'bg-indigo-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>Linear</button>
-                  <button onClick={() => handleUpdate({ gradientType: 'radial' })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientType === 'radial' ? 'bg-indigo-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>Radial</button>
+                  <button onClick={() => handleUpdate({ gradientType: 'linear' })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientType !== 'radial' ? 'bg-blue-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>Linear</button>
+                  <button onClick={() => handleUpdate({ gradientType: 'radial' })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientType === 'radial' ? 'bg-blue-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>Radial</button>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1 mt-2">
                 <label className="text-xs text-gray-400">Color Count</label>
                 <div className="flex gap-2">
-                  <button onClick={() => handleUpdate({ gradientColorCount: 2 })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientColorCount === 2 ? 'bg-indigo-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>2 Colors</button>
-                  <button onClick={() => handleUpdate({ gradientColorCount: 4 })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientColorCount !== 2 ? 'bg-indigo-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>4 Colors</button>
+                  <button onClick={() => handleUpdate({ gradientColorCount: 2 })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientColorCount === 2 ? 'bg-blue-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>2 Colors</button>
+                  <button onClick={() => handleUpdate({ gradientColorCount: 4 })} className={`flex-1 py-1.5 text-xs font-medium rounded transition-all ${styleConfig.gradientColorCount !== 2 ? 'bg-blue-600 text-white shadow' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>4 Colors</button>
                 </div>
               </div>
 
@@ -1076,7 +1140,7 @@ export const StylePanel = () => {
                   <select 
                     value={styleConfig.gradientRadialCenter || 'center'} 
                     onChange={(e) => handleUpdate({ gradientRadialCenter: e.target.value })}
-                    className="w-full bg-gray-900 border border-gray-700 rounded p-1.5 text-xs text-gray-300 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#18181c] border border-[#2e2e38] rounded p-1.5 text-xs text-gray-300 focus:outline-none focus:border-blue-500"
                   >
                     <option value="center">Center</option>
                     <option value="left">Left</option>
@@ -1091,7 +1155,7 @@ export const StylePanel = () => {
                   <select 
                     value={styleConfig.gradientDirection || '90deg'} 
                     onChange={(e) => handleUpdate({ gradientDirection: e.target.value })}
-                    className="w-full bg-gray-900 border border-gray-700 rounded p-1.5 text-xs text-gray-300 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-[#18181c] border border-[#2e2e38] rounded p-1.5 text-xs text-gray-300 focus:outline-none focus:border-blue-500"
                   >
                     <option value="90deg">Left to Right</option>
                     <option value="180deg">Top to Bottom</option>
@@ -1104,7 +1168,7 @@ export const StylePanel = () => {
               <div className="flex flex-col gap-1 mt-2">
                 <label className="text-xs text-gray-400 flex justify-between items-center">
                   <span>Gradient Spread</span>
-                  <span className="text-indigo-400">{styleConfig.gradientSpread ?? 100}%</span>
+                  <span className="text-blue-400">{styleConfig.gradientSpread ?? 100}%</span>
                 </label>
                 <input
                   type="range"
@@ -1119,7 +1183,7 @@ export const StylePanel = () => {
               <div className="flex flex-col gap-1 mt-2">
                 <label className="text-xs text-gray-400 flex justify-between items-center">
                   <span>Gradient Softness</span>
-                  <span className="text-indigo-400">{styleConfig.gradientSoftness ?? 100}%</span>
+                  <span className="text-blue-400">{styleConfig.gradientSoftness ?? 100}%</span>
                 </label>
                 <input
                   type="range"
@@ -1158,7 +1222,7 @@ export const StylePanel = () => {
               <label className="text-xs text-gray-400 flex justify-between items-center">
                 <span>Glow Intensity</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-indigo-400">{styleConfig.glowIntensity ?? 3}</span>
+                  <span className="text-blue-400">{styleConfig.glowIntensity ?? 3}</span>
                   <button onClick={() => handleUpdate({ glowIntensity: defaultStyle.glowIntensity ?? 3 })} className="text-gray-500 hover:text-white" title="Reset to default">
                     <RotateCcw size={12} />
                   </button>
@@ -1168,267 +1232,236 @@ export const StylePanel = () => {
                 type="range" min="1" max="50" 
                 value={styleConfig.glowIntensity ?? 3} 
                 onChange={(e) => handleUpdate({ glowIntensity: parseInt(e.target.value) })} 
-                className="w-full accent-indigo-500" 
+                className="w-full accent-blue-500" 
               />
             </div>
           )}
         </div>
       </AccordionItem>
 
-      <AccordionItem title="Layout & Positioning" isOpen={openPanels.includes("Layout & Positioning")} onToggle={() => togglePanel("Layout & Positioning")}>
+      <AccordionItem 
+        title="Layout & Positioning" 
+        icon={<Layout className="w-4 h-4" />} 
+        badge={styleConfig.position ? styleConfig.position.charAt(0).toUpperCase() + styleConfig.position.slice(1) : undefined}
+        isOpen={openPanels.includes("Layout & Positioning")} 
+        onToggle={() => togglePanel("Layout & Positioning")}
+      >
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium">Lines per Caption</label>
-          <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Lines per Caption</label>
+          <div className="grid grid-cols-3 gap-1.5 bg-[#141416]/80 p-1.5 rounded-xl border border-[#2b2b34]">
             {(['auto', 'single', 'double'] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => handleUpdate({ lineLayout: mode })}
-                className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${
+                className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
                   styleConfig.lineLayout === mode 
-                    ? 'bg-indigo-600 text-white shadow' 
-                    : 'text-gray-400 hover:text-gray-200'
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                    : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
                 }`}
               >
-                {mode.charAt(0).toUpperCase() + mode.slice(1)} Line
+                {mode === 'auto' ? 'Auto Line' : mode === 'single' ? 'Single Line' : 'Double Line'}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between items-center">
-            <label className="text-sm text-gray-400 font-medium">Text Box Options</label>
-            <button 
-              onClick={() => setShowTextBoxBorder(!showTextBoxBorder)}
-              className={`px-2 py-1 rounded text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 border transition-colors ${showTextBoxBorder ? 'bg-red-900/50 text-red-400 border-red-700/50 hover:bg-red-800/50' : 'bg-gray-800 text-gray-400 border-gray-700 hover:text-gray-200 hover:bg-gray-700'}`}
-              title="Toggle preview border"
-            >
-              <Square className="w-3 h-3" /> {showTextBoxBorder ? 'Hide Border' : 'Show Border'}
-            </button>
-          </div>
-          <div className="flex flex-col gap-2 bg-gray-900 p-3 rounded-lg border border-gray-700">
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
-              <input 
-                type="checkbox" 
+        {styleConfig.lineLayout !== 'single' && (
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Text Box Options</label>
+              <button 
+                onClick={() => setShowTextBoxBorder(!showTextBoxBorder)}
+                className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider flex items-center gap-1 border transition-colors ${showTextBoxBorder ? 'bg-red-900/50 text-red-400 border-red-700/50 hover:bg-red-800/50' : 'bg-[#212126]/80 text-gray-400 border-[#2e2e38] hover:text-gray-200 hover:bg-[#2e2e38]'}`}
+                title="Toggle preview border"
+              >
+                <Square className="w-3 h-3" /> {showTextBoxBorder ? 'Hide Border' : 'Show Border'}
+              </button>
+            </div>
+            <div className="flex flex-col gap-2.5 bg-[#141416]/80 p-3.5 rounded-xl border border-[#2b2b34]">
+              <CustomCheckbox
                 checked={styleConfig.wrapText ?? true}
-                onChange={(e) => handleUpdate({ wrapText: e.target.checked })}
-                className="w-4 h-4 rounded accent-indigo-500 bg-gray-800 border-gray-600"
+                onChange={(c) => handleUpdate({ wrapText: c })}
+                label="Wrap to Text Box"
               />
-              Wrap to Text Box
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
-              <input 
-                type="checkbox" 
-                checked={styleConfig.clipText ?? false}
-                onChange={(e) => handleUpdate({ clipText: e.target.checked })}
-                className="w-4 h-4 rounded accent-indigo-500 bg-gray-800 border-gray-600"
-              />
-              Clip to Text Box
-            </label>
 
-            {(styleConfig.clipText || (styleConfig.wrapText ?? true)) && (
-              <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-gray-700">
-                <label className="text-xs text-gray-400 flex justify-between items-center">
-                  <span>Box Width</span>
-                  <div className="flex items-center gap-2">
-                    <span>{styleConfig.textBoxWidth ?? 96}%</span>
-                    <button onClick={() => handleUpdate({ textBoxWidth: defaultStyle.textBoxWidth ?? 96 })} className="text-gray-500 hover:text-white" title="Reset to default">
-                      <RotateCcw size={12} />
-                    </button>
-                  </div>
-                </label>
-                <input 
-                  type="range" min="10" max="100" 
-                  value={styleConfig.textBoxWidth ?? 96} 
-                  onChange={(e) => handleUpdate({ textBoxWidth: parseInt(e.target.value) })} 
-                  className="w-full accent-indigo-500" 
-                />
-
-                {styleConfig.clipText && (
-                  <>
+              {(styleConfig.wrapText ?? true) && (
+                <div className="flex flex-col gap-3 mt-2 pt-3 border-t border-[#2b2b34]">
+                  <div className="flex flex-col gap-1">
                     <label className="text-xs text-gray-400 flex justify-between items-center">
-                      <span>Box Height</span>
+                      <span>Box Width</span>
                       <div className="flex items-center gap-2">
-                        <span>{styleConfig.textBoxHeight ?? 20}%</span>
-                        <button onClick={() => handleUpdate({ textBoxHeight: defaultStyle.textBoxHeight ?? 20 })} className="text-gray-500 hover:text-white" title="Reset to default">
+                        <span className="text-blue-400 font-mono text-xs">{styleConfig.textBoxWidth ?? 96}%</span>
+                        <button onClick={() => handleUpdate({ textBoxWidth: defaultStyle.textBoxWidth ?? 96 })} className="text-gray-500 hover:text-white" title="Reset to default">
                           <RotateCcw size={12} />
                         </button>
                       </div>
                     </label>
                     <input 
-                      type="range" min="5" max="100" 
-                      value={styleConfig.textBoxHeight ?? 20} 
-                      onChange={(e) => handleUpdate({ textBoxHeight: parseInt(e.target.value) })} 
-                      className="w-full accent-indigo-500" 
+                      type="range" min="10" max="100" 
+                      value={styleConfig.textBoxWidth ?? 96} 
+                      onChange={(e) => handleUpdate({ textBoxWidth: parseInt(e.target.value) })} 
+                      className="w-full accent-blue-500" 
                     />
-                  </>
-                )}
-              </div>
-            )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium">Position on Screen</label>
-          <select 
-            className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={styleConfig.position}
-            onChange={(e) => handleUpdate({ position: e.target.value as 'top'|'center'|'lower-third' })}
-          >
-            <option value="top">Top</option>
-            <option value="center">Center</option>
-            <option value="lower-third">Bottom</option>
-          </select>
-        </div>
-      </AccordionItem>
-
-      <AccordionItem title="Animations" isOpen={openPanels.includes("Animations")} onToggle={() => togglePanel("Animations")}>
-        <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium">Stagger Mode (Speed)</label>
-          <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
-            {(['line', 'word', 'letter', 'karaoke', 'karaoke-cumulative'] as const).map((mode) => (
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Position on Screen</label>
+          <div className="grid grid-cols-3 gap-1.5 bg-[#141416]/80 p-1.5 rounded-xl border border-[#2b2b34]">
+            {(['top', 'center', 'lower-third'] as const).map((pos) => (
               <button
-                key={mode}
-                onClick={() => {
-                  const updates: Partial<typeof styleConfig> = { displayMode: mode };
-                  if (mode === 'karaoke' || mode === 'karaoke-cumulative') {
-                    updates.staggerSpeedMode = 'math';
-                  }
-                  handleUpdate(updates);
-                }}
-                className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${
-                  styleConfig.displayMode === mode 
-                    ? 'bg-indigo-600 text-white shadow' 
-                    : 'text-gray-400 hover:text-gray-200'
+                key={pos}
+                onClick={() => handleUpdate({ position: pos })}
+                className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
+                  styleConfig.position === pos
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                    : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
                 }`}
               >
-                {mode === 'karaoke-cumulative' ? 'Karaoke+' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                {pos === 'top' ? 'Top' : pos === 'center' ? 'Center' : 'Bottom'}
               </button>
             ))}
           </div>
+        </div>
+      </AccordionItem>
+
+      <AccordionItem 
+        title="Animations" 
+        icon={<Zap className="w-4 h-4" />} 
+        badge={styleConfig.animationType !== 'none' ? (styleConfig.animationType === '3-line-focus' ? '3-Way Focus' : styleConfig.animationType) : undefined}
+        isOpen={openPanels.includes("Animations")} 
+        onToggle={() => togglePanel("Animations")}
+      >
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Stagger Mode (Speed)</label>
+          <div className="grid grid-cols-3 gap-1.5 bg-[#141416]/80 p-1.5 rounded-xl border border-[#2b2b34]">
+            {(['line', 'word', 'letter'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => handleUpdate({ displayMode: mode })}
+                className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
+                  styleConfig.displayMode === mode
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                    : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
+                }`}
+              >
+                {mode.charAt(0).toUpperCase() + mode.slice(1)}
+              </button>
+            ))}
+            {(['karaoke', 'karaoke-cumulative'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => {
+                  handleUpdate({ displayMode: mode, staggerSpeedMode: 'math' });
+                }}
+                className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
+                  mode === 'karaoke' ? 'col-span-1' : 'col-span-2'
+                } ${
+                  styleConfig.displayMode === mode
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                    : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
+                }`}
+              >
+                {mode === 'karaoke-cumulative' ? 'Karaoke+ (Sync)' : 'Karaoke'}
+              </button>
+            ))}
+          </div>
+
           {styleConfig.displayMode !== 'line' && (
-            <div className="mt-2">
-              <label className="text-xs text-gray-500 font-medium mb-1 block">Stagger Speed Profile</label>
-              <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
-                <button
-                  onClick={() => handleUpdate({ staggerSpeedMode: 'auto' })}
-                  disabled={styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative'}
-                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
-                    (styleConfig.staggerSpeedMode ?? 'auto') === 'auto'
-                      ? 'bg-gray-700 text-white shadow' 
-                      : (styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative') ? 'text-gray-600 cursor-not-allowed opacity-50' : 'text-gray-500 hover:text-gray-300'
-                  }`}
-                  title="Default fast speed"
-                >
-                  Auto Fast
-                </button>
-                <button
-                  onClick={() => handleUpdate({ staggerSpeedMode: 'timecode' })}
-                  disabled={styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative'}
-                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
-                    styleConfig.staggerSpeedMode === 'timecode'
-                      ? 'bg-gray-700 text-white shadow' 
-                      : (styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative') ? 'text-gray-600 cursor-not-allowed opacity-50' : 'text-gray-500 hover:text-gray-300'
-                  }`}
-                  title="Stretch perfectly to caption timecode"
-                >
-                  Match Timecode
-                </button>
-                <button
-                  onClick={() => handleUpdate({ staggerSpeedMode: 'math' })}
-                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
-                    (styleConfig.staggerSpeedMode ?? 'auto') === 'math'
-                      ? 'bg-gray-700 text-white shadow' 
-                      : 'text-gray-500 hover:text-gray-300'
-                  }`}
-                  title="Natural voice sync based on word length"
-                >
-                  Audio Sync
-                </button>
+            <div className="mt-2 flex flex-col gap-1.5">
+              <label className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Stagger Speed Profile</label>
+              <div className="grid grid-cols-3 gap-1.5 bg-[#141416]/80 p-1.5 rounded-xl border border-[#2b2b34]">
+                {[
+                  { id: 'auto', label: 'Auto Fast', desc: 'Default fast speed' },
+                  { id: 'timecode', label: 'Timecode', desc: 'Stretch to caption duration' },
+                  { id: 'math', label: 'Audio Sync', desc: 'Natural word length sync' }
+                ].map((p) => {
+                  const isKaraoke = styleConfig.displayMode === 'karaoke' || styleConfig.displayMode === 'karaoke-cumulative';
+                  const disabled = isKaraoke && p.id !== 'math';
+                  const active = (styleConfig.staggerSpeedMode ?? 'auto') === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => handleUpdate({ staggerSpeedMode: p.id as any })}
+                      disabled={disabled}
+                      className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
+                        active
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                          : disabled
+                          ? 'text-gray-600 opacity-40 cursor-not-allowed'
+                          : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
+                      }`}
+                      title={p.desc}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
 
           {styleConfig.displayMode === 'karaoke' && (
-            <div className="mt-2">
-              <label className="text-xs text-gray-500 font-medium mb-1 block">Karaoke Color Fade</label>
-              <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
-                <button
-                  onClick={() => handleUpdate({ colorFadeType: 'in-out' })}
-                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
-                    (styleConfig.colorFadeType ?? 'in-out') === 'in-out'
-                      ? 'bg-gray-700 text-white shadow' 
-                      : 'text-gray-500 hover:text-gray-300'
-                  }`}
-                  title="Crossfade in and out"
-                >
-                  Fade In & Out
-                </button>
-                <button
-                  onClick={() => handleUpdate({ colorFadeType: 'in' })}
-                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
-                    styleConfig.colorFadeType === 'in'
-                      ? 'bg-gray-700 text-white shadow' 
-                      : 'text-gray-500 hover:text-gray-300'
-                  }`}
-                  title="Crossfade in, snap out"
-                >
-                  Fade In Only
-                </button>
-                <button
-                  onClick={() => handleUpdate({ colorFadeType: 'out' })}
-                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
-                    styleConfig.colorFadeType === 'out'
-                      ? 'bg-gray-700 text-white shadow' 
-                      : 'text-gray-500 hover:text-gray-300'
-                  }`}
-                  title="Snap in, crossfade out"
-                >
-                  Fade Out Only
-                </button>
-                <button
-                  onClick={() => handleUpdate({ colorFadeType: 'none' })}
-                  className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
-                    styleConfig.colorFadeType === 'none'
-                      ? 'bg-gray-700 text-white shadow' 
-                      : 'text-gray-500 hover:text-gray-300'
-                  }`}
-                  title="Snap instantly"
-                >
-                  Non Fade
-                </button>
+            <div className="mt-2 flex flex-col gap-1.5">
+              <label className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Karaoke Color Fade</label>
+              <div className="grid grid-cols-2 gap-1.5 bg-[#141416]/80 p-1.5 rounded-xl border border-[#2b2b34]">
+                {[
+                  { id: 'in-out', label: 'Fade In & Out' },
+                  { id: 'in', label: 'Fade In Only' },
+                  { id: 'out', label: 'Fade Out Only' },
+                  { id: 'none', label: 'No Fade (Snap)' }
+                ].map((fade) => (
+                  <button
+                    key={fade.id}
+                    onClick={() => handleUpdate({ colorFadeType: fade.id as any })}
+                    className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
+                      (styleConfig.colorFadeType ?? 'in-out') === fade.id
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
+                    }`}
+                  >
+                    {fade.label}
+                  </button>
+                ))}
               </div>
             </div>
           )}
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-400 font-medium">Entrance Animation</label>
-          <div className="grid grid-cols-2 gap-2">
-            {(['none', 'slide-up', 'pop', 'fade', 'typewriter', 'elastic-bounce', 'kinetic-clash', 'chaos-converge', '3-line-focus'] as const).map((type) => (
+        <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-[#2b2b34]">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Entrance Animation</label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { id: 'none', label: 'None' },
+              { id: 'slide-up', label: 'Slide Up' },
+              { id: 'pop', label: 'Pop' },
+              { id: 'fade', label: 'Fade' },
+              { id: 'typewriter', label: 'Typewriter' },
+              { id: 'elastic-bounce', label: 'Elastic' },
+              { id: 'kinetic-clash', label: 'Kinetic' },
+              { id: 'chaos-converge', label: 'Chaos' },
+              { id: '3-line-focus', label: '3-Way Focus' },
+            ].map((anim) => (
               <button
-                key={type}
-                onClick={() => handleUpdate({ animationType: type })}
-                className={`py-2 rounded-lg border text-sm transition-colors ${
-                  styleConfig.animationType === type
-                    ? 'bg-indigo-600 border-indigo-500 text-white'
-                    : 'bg-gray-900 border-gray-700 text-gray-400 hover:border-gray-500'
+                key={anim.id}
+                onClick={() => handleUpdate({ animationType: anim.id as any })}
+                className={`py-2 px-1.5 rounded-xl text-xs font-semibold transition-all border text-center flex items-center justify-center ${
+                  styleConfig.animationType === anim.id
+                    ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/30'
+                    : 'bg-[#141416]/80 border-[#2b2b34] text-gray-400 hover:border-[#2e2e38] hover:text-white hover:bg-[#212126]'
                 }`}
               >
-                {type === 'none' ? 'None' :
-                 type === 'slide-up' ? 'Slide up' : 
-                 type === 'pop' ? 'Pop' : 
-                 type === 'fade' ? 'Fade' : 
-                 type === 'elastic-bounce' ? 'Elastic Bounce' : 
-                 type === 'kinetic-clash' ? 'Kinetic Clash' :
-                 type === 'chaos-converge' ? 'Chaos Converge' : 
-                 type === '3-line-focus' ? '3-Way Focus' : 'Typewriter'}
+                {anim.label}
               </button>
             ))}
           </div>
           
           {styleConfig.animationType === '3-line-focus' && (
-            <div className="flex flex-col gap-3 mt-3 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+            <div className="flex flex-col gap-3 mt-3 p-3 bg-[#18181c]/50 rounded-lg border border-[#2e2e38]">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">3-Way Focus Layout</span>
               
               <div className="flex flex-col gap-1">
@@ -1441,7 +1474,7 @@ export const StylePanel = () => {
                       className={`flex-1 py-1 text-xs font-medium rounded transition-all ${
                         (styleConfig.focusPastAlignment || 'center') === align
                           ? 'bg-gray-700 text-white shadow'
-                          : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                          : 'bg-[#212126] text-gray-500 hover:text-gray-300'
                       }`}
                     >
                       {align.charAt(0).toUpperCase() + align.slice(1)}
@@ -1459,8 +1492,8 @@ export const StylePanel = () => {
                       onClick={() => handleUpdate({ focusCurrentAlignment: align })}
                       className={`flex-1 py-1 text-xs font-medium rounded transition-all ${
                         (styleConfig.focusCurrentAlignment || 'center') === align
-                          ? 'bg-indigo-600 text-white shadow'
-                          : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                          ? 'bg-blue-600 text-white shadow'
+                          : 'bg-[#212126] text-gray-500 hover:text-gray-300'
                       }`}
                     >
                       {align.charAt(0).toUpperCase() + align.slice(1)}
@@ -1479,7 +1512,7 @@ export const StylePanel = () => {
                       className={`flex-1 py-1 text-xs font-medium rounded transition-all ${
                         (styleConfig.focusFutureAlignment || 'center') === align
                           ? 'bg-gray-700 text-white shadow'
-                          : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                          : 'bg-[#212126] text-gray-500 hover:text-gray-300'
                       }`}
                     >
                       {align.charAt(0).toUpperCase() + align.slice(1)}
@@ -1491,25 +1524,25 @@ export const StylePanel = () => {
           )}
         </div>
 
-        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-700">
-          <label className="text-sm text-gray-400 font-medium">Motion Blur</label>
-          <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
+        <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-[#2b2b34]">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Motion Blur</label>
+          <div className="grid grid-cols-2 gap-1.5 bg-[#141416]/80 p-1.5 rounded-xl border border-[#2b2b34]">
             <button
               onClick={() => handleUpdate({ motionBlur: false })}
-              className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+              className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
                 !styleConfig.motionBlur
-                  ? 'bg-gray-700 text-white shadow' 
-                  : 'text-gray-500 hover:text-gray-300'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                  : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
               }`}
             >
               Off
             </button>
             <button
               onClick={() => handleUpdate({ motionBlur: true })}
-              className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+              className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
                 styleConfig.motionBlur
-                  ? 'bg-indigo-600 text-white shadow' 
-                  : 'text-gray-500 hover:text-gray-300'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                  : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
               }`}
             >
               On
@@ -1520,7 +1553,7 @@ export const StylePanel = () => {
               <div className="flex justify-between items-center text-xs text-gray-500">
                 <span>Intensity</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono">{styleConfig.motionBlurIntensity ?? 15}px</span>
+                  <span className="font-mono text-blue-400">{styleConfig.motionBlurIntensity ?? 15}px</span>
                   <button onClick={() => handleUpdate({ motionBlurIntensity: defaultStyle.motionBlurIntensity ?? 15 })} className="text-gray-500 hover:text-white" title="Reset to default">
                     <RotateCcw size={12} />
                   </button>
@@ -1533,31 +1566,31 @@ export const StylePanel = () => {
                 step="1"
                 value={styleConfig.motionBlurIntensity ?? 15}
                 onChange={(e) => handleUpdate({ motionBlurIntensity: parseFloat(e.target.value) })}
-                className="w-full accent-indigo-500"
+                className="w-full accent-blue-500"
               />
             </div>
           )}
         </div>
 
-        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-700">
-          <label className="text-sm text-gray-400 font-medium">Text Drop Shadow</label>
-          <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
+        <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-[#2b2b34]">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Text Drop Shadow</label>
+          <div className="grid grid-cols-2 gap-1.5 bg-[#141416]/80 p-1.5 rounded-xl border border-[#2b2b34]">
             <button
               onClick={() => handleUpdate({ enableDropShadow: false })}
-              className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+              className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
                 styleConfig.enableDropShadow === false
-                  ? 'bg-gray-700 text-white shadow' 
-                  : 'text-gray-500 hover:text-gray-300'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                  : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
               }`}
             >
               Off
             </button>
             <button
               onClick={() => handleUpdate({ enableDropShadow: true })}
-              className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+              className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
                 styleConfig.enableDropShadow !== false
-                  ? 'bg-indigo-600 text-white shadow' 
-                  : 'text-gray-500 hover:text-gray-300'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                  : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
               }`}
             >
               On
@@ -1565,31 +1598,23 @@ export const StylePanel = () => {
           </div>
           {styleConfig.enableDropShadow !== false && (
             <div className="mt-2 flex flex-col gap-3">
-              <div className="flex flex-col gap-2 bg-gray-900/50 p-2 rounded-lg border border-gray-700/50">
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={styleConfig.dropShadowOnBase !== false}
-                    onChange={(e) => handleUpdate({ dropShadowOnBase: e.target.checked })}
-                    className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-500 focus:ring-indigo-500"
-                  />
-                  Apply to Normal Text
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={styleConfig.dropShadowOnHighlight !== false}
-                    onChange={(e) => handleUpdate({ dropShadowOnHighlight: e.target.checked })}
-                    className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-500 focus:ring-indigo-500"
-                  />
-                  Apply to Highlighted Text
-                </label>
+              <div className="flex flex-col gap-2.5 bg-[#141416]/80 p-3.5 rounded-xl border border-[#2b2b34]">
+                <CustomCheckbox
+                  checked={styleConfig.dropShadowOnBase !== false}
+                  onChange={(c) => handleUpdate({ dropShadowOnBase: c })}
+                  label="Apply to Normal Text"
+                />
+                <CustomCheckbox
+                  checked={styleConfig.dropShadowOnHighlight !== false}
+                  onChange={(c) => handleUpdate({ dropShadowOnHighlight: c })}
+                  label="Apply to Highlighted Text"
+                />
               </div>
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Opacity</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono">{styleConfig.dropShadowIntensity ?? 50}%</span>
+                    <span className="font-mono text-blue-400">{styleConfig.dropShadowIntensity ?? 50}%</span>
                     <button onClick={() => handleUpdate({ dropShadowIntensity: defaultStyle.dropShadowIntensity ?? 50 })} className="text-gray-500 hover:text-white" title="Reset to default">
                       <RotateCcw size={12} />
                     </button>
@@ -1602,7 +1627,7 @@ export const StylePanel = () => {
                   step="1"
                   value={styleConfig.dropShadowIntensity ?? 50}
                   onChange={(e) => handleUpdate({ dropShadowIntensity: parseInt(e.target.value) })}
-                  className="w-full accent-indigo-500"
+                  className="w-full accent-blue-500"
                 />
               </div>
 
@@ -1610,7 +1635,7 @@ export const StylePanel = () => {
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Angle</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono">{styleConfig.dropShadowAngle ?? 45}&deg;</span>
+                    <span className="font-mono text-blue-400">{styleConfig.dropShadowAngle ?? 45}&deg;</span>
                     <button onClick={() => handleUpdate({ dropShadowAngle: defaultStyle.dropShadowAngle ?? 45 })} className="text-gray-500 hover:text-white" title="Reset to default">
                       <RotateCcw size={12} />
                     </button>
@@ -1623,7 +1648,7 @@ export const StylePanel = () => {
                   step="1"
                   value={styleConfig.dropShadowAngle ?? 45}
                   onChange={(e) => handleUpdate({ dropShadowAngle: parseInt(e.target.value) })}
-                  className="w-full accent-indigo-500"
+                  className="w-full accent-blue-500"
                 />
               </div>
 
@@ -1631,7 +1656,7 @@ export const StylePanel = () => {
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Distance</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono">{styleConfig.dropShadowDistance ?? 15}%</span>
+                    <span className="font-mono text-blue-400">{styleConfig.dropShadowDistance ?? 15}%</span>
                     <button onClick={() => handleUpdate({ dropShadowDistance: defaultStyle.dropShadowDistance ?? 15 })} className="text-gray-500 hover:text-white" title="Reset to default">
                       <RotateCcw size={12} />
                     </button>
@@ -1644,7 +1669,7 @@ export const StylePanel = () => {
                   step="1"
                   value={styleConfig.dropShadowDistance ?? 15}
                   onChange={(e) => handleUpdate({ dropShadowDistance: parseInt(e.target.value) })}
-                  className="w-full accent-indigo-500"
+                  className="w-full accent-blue-500"
                 />
               </div>
 
@@ -1652,7 +1677,7 @@ export const StylePanel = () => {
                 <div className="flex justify-between items-center text-xs text-gray-500">
                   <span>Shadow Softness</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono">{styleConfig.dropShadowBlur ?? 20}%</span>
+                    <span className="font-mono text-blue-400">{styleConfig.dropShadowBlur ?? 20}%</span>
                     <button onClick={() => handleUpdate({ dropShadowBlur: defaultStyle.dropShadowBlur ?? 20 })} className="text-gray-500 hover:text-white" title="Reset to default">
                       <RotateCcw size={12} />
                     </button>
@@ -1665,7 +1690,7 @@ export const StylePanel = () => {
                   step="1"
                   value={styleConfig.dropShadowBlur ?? 20}
                   onChange={(e) => handleUpdate({ dropShadowBlur: parseInt(e.target.value) })}
-                  className="w-full accent-indigo-500"
+                  className="w-full accent-blue-500"
                 />
               </div>
 
@@ -1681,25 +1706,25 @@ export const StylePanel = () => {
           )}
         </div>
         
-        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-700">
-          <label className="text-sm text-gray-400 font-medium">Text Inner Shadow</label>
-          <div className="flex bg-gray-900 p-1 rounded-lg border border-gray-700">
+        <div className="flex flex-col gap-2 mt-2 pt-3 border-t border-[#2b2b34]">
+          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Text Inner Shadow</label>
+          <div className="grid grid-cols-2 gap-1.5 bg-[#141416]/80 p-1.5 rounded-xl border border-[#2b2b34]">
             <button
               onClick={() => handleUpdate({ enableInnerShadow: false })}
-              className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+              className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
                 styleConfig.enableInnerShadow === false
-                  ? 'bg-gray-700 text-white shadow' 
-                  : 'text-gray-500 hover:text-gray-300'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                  : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
               }`}
             >
               Off
             </button>
             <button
               onClick={() => handleUpdate({ enableInnerShadow: true })}
-              className={`flex-1 py-1 text-xs font-medium rounded-md transition-all ${
+              className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
                 styleConfig.enableInnerShadow !== false
-                  ? 'bg-indigo-600 text-white shadow' 
-                  : 'text-gray-500 hover:text-gray-300'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                  : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
               }`}
             >
               On
@@ -1707,25 +1732,17 @@ export const StylePanel = () => {
           </div>
           {styleConfig.enableInnerShadow !== false && (
             <div className="mt-2 flex flex-col gap-3">
-              <div className="flex flex-col gap-2 bg-gray-900/50 p-2 rounded-lg border border-gray-700/50">
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={styleConfig.innerShadowOnBase !== false}
-                    onChange={(e) => handleUpdate({ innerShadowOnBase: e.target.checked })}
-                    className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-500 focus:ring-indigo-500"
-                  />
-                  Apply to Normal Text
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={styleConfig.innerShadowOnHighlight !== false}
-                    onChange={(e) => handleUpdate({ innerShadowOnHighlight: e.target.checked })}
-                    className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-indigo-500 focus:ring-indigo-500"
-                  />
-                  Apply to Highlighted Text
-                </label>
+              <div className="flex flex-col gap-2.5 bg-[#141416]/80 p-3.5 rounded-xl border border-[#2b2b34]">
+                <CustomCheckbox
+                  checked={styleConfig.innerShadowOnBase !== false}
+                  onChange={(c) => handleUpdate({ innerShadowOnBase: c })}
+                  label="Apply to Normal Text"
+                />
+                <CustomCheckbox
+                  checked={styleConfig.innerShadowOnHighlight !== false}
+                  onChange={(c) => handleUpdate({ innerShadowOnHighlight: c })}
+                  label="Apply to Highlighted Text"
+                />
               </div>
               <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center text-xs text-gray-500">
@@ -1744,7 +1761,7 @@ export const StylePanel = () => {
                   step="1"
                   value={styleConfig.innerShadowIntensity ?? 50}
                   onChange={(e) => handleUpdate({ innerShadowIntensity: parseInt(e.target.value) })}
-                  className="w-full accent-indigo-500"
+                  className="w-full accent-blue-500"
                 />
               </div>
 
@@ -1765,7 +1782,7 @@ export const StylePanel = () => {
                   step="1"
                   value={styleConfig.innerShadowAngle ?? 45}
                   onChange={(e) => handleUpdate({ innerShadowAngle: parseInt(e.target.value) })}
-                  className="w-full accent-indigo-500"
+                  className="w-full accent-blue-500"
                 />
               </div>
 
@@ -1786,7 +1803,7 @@ export const StylePanel = () => {
                   step="1"
                   value={styleConfig.innerShadowDistance ?? 15}
                   onChange={(e) => handleUpdate({ innerShadowDistance: parseInt(e.target.value) })}
-                  className="w-full accent-indigo-500"
+                  className="w-full accent-blue-500"
                 />
               </div>
 
@@ -1807,7 +1824,7 @@ export const StylePanel = () => {
                   step="1"
                   value={styleConfig.innerShadowBlur ?? 20}
                   onChange={(e) => handleUpdate({ innerShadowBlur: parseInt(e.target.value) })}
-                  className="w-full accent-indigo-500"
+                  className="w-full accent-blue-500"
                 />
               </div>
 
@@ -1826,11 +1843,11 @@ export const StylePanel = () => {
 
       {presetContextMenu && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed z-[9999] bg-gray-800 border border-gray-700 rounded shadow-2xl py-1 w-48"
+          className="fixed z-[9999] bg-[#212126] border border-[#2e2e38] rounded shadow-2xl py-1 w-48"
           style={{ top: presetContextMenu.y, left: presetContextMenu.x }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="px-3 py-1.5 border-b border-gray-700 text-xs font-bold text-gray-300 truncate">
+          <div className="px-3 py-1.5 border-b border-[#2e2e38] text-xs font-bold text-gray-300 truncate">
             {presetContextMenu.presetName}
           </div>
           <button 
@@ -1850,12 +1867,12 @@ export const StylePanel = () => {
   
       {showResetModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black/60 z-[99999] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowResetModal(false)}>
-          <div className="bg-gray-800 border border-gray-700 p-5 rounded-xl max-w-sm w-full shadow-2xl flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#212126] border border-[#2e2e38] p-5 rounded-xl max-w-sm w-full shadow-2xl flex flex-col gap-3" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-gray-100 text-lg mb-1">Reset Options</h3>
             <p className="text-sm text-gray-400 mb-2">What would you like to reset?</p>
             
             <button 
-              className="w-full text-left p-3 rounded-lg bg-gray-900 border border-gray-700 hover:bg-gray-700 transition flex flex-col gap-1"
+              className="w-full text-left p-3 rounded-lg bg-[#18181c] border border-[#2e2e38] hover:bg-[#2e2e38] transition flex flex-col gap-1"
               onClick={() => {
                 setStyleConfig(defaultStyle);
                 setShowResetModal(false);
@@ -1865,7 +1882,7 @@ export const StylePanel = () => {
               <span className="text-gray-500 text-xs">Reset global fonts, colors, and animations to default.</span>
             </button>
             <button 
-              className="w-full text-left p-3 rounded-lg bg-gray-900 border border-gray-700 hover:bg-gray-700 transition flex flex-col gap-1"
+              className="w-full text-left p-3 rounded-lg bg-[#18181c] border border-[#2e2e38] hover:bg-[#2e2e38] transition flex flex-col gap-1"
               onClick={() => {
                 setStyleConfig({
                   ...styleConfig,
@@ -1883,7 +1900,7 @@ export const StylePanel = () => {
 
 
             <button 
-              className="w-full text-left p-3 rounded-lg bg-gray-900 border border-gray-700 hover:bg-gray-700 transition flex flex-col gap-1"
+              className="w-full text-left p-3 rounded-lg bg-[#18181c] border border-[#2e2e38] hover:bg-[#2e2e38] transition flex flex-col gap-1"
               onClick={() => {
                 setCaptions(captions.map(c => ({ 
                   ...c, 

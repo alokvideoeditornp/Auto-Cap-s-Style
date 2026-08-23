@@ -64,14 +64,14 @@ export const FileUpload: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-6 bg-gray-900 rounded-xl border border-gray-800">
+    <div className="flex flex-col gap-4 p-6 bg-[#18181c] rounded-xl border border-[#2b2b34]">
       <h2 className="text-xl font-bold text-white mb-2">Upload Files</h2>
       
       <div className="flex flex-col gap-2">
         <label className="text-sm text-gray-400">Video File (.mp4, .mov)</label>
         <button 
           onClick={() => videoInputRef.current?.click()}
-          className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white py-3 px-4 rounded-lg transition"
+          className="flex items-center justify-center gap-2 bg-[#212126] hover:bg-[#2e2e38] text-white py-3 px-4 rounded-lg transition"
         >
           <Upload size={18} /> Choose Video
         </button>
@@ -88,7 +88,7 @@ export const FileUpload: React.FC = () => {
         <label className="text-sm text-gray-400">SRT Subtitles (.srt)</label>
         <button 
           onClick={() => srtInputRef.current?.click()}
-          className="flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white py-3 px-4 rounded-lg transition"
+          className="flex items-center justify-center gap-2 bg-[#212126] hover:bg-[#2e2e38] text-white py-3 px-4 rounded-lg transition"
         >
           <Upload size={18} /> Choose SRT File
         </button>

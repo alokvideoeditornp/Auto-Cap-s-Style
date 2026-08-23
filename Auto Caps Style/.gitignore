@@ -40,4 +40,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# local render storage and temp
+/public/renders/
+/public/temp/
+/public/auto.srt
+/public/auto.json
+/public/videos/
+/temp/
+
 build

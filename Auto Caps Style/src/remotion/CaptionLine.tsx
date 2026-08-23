@@ -105,8 +105,6 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       layoutRows.forEach(row => row.style.justifyContent = 'flex-start');
 
       // Strip transforms from animated children to get true layout size.
-      // NOTE: This is safe — useLayoutEffect runs synchronously before the browser paints,
-      // so stripping → measuring → restoring all happens in one block with zero visible flicker.
       const childrenSpans = Array.from(content.querySelectorAll('span'));
       const originalTransforms = childrenSpans.map(child => (child as HTMLElement).style.transform);
       childrenSpans.forEach(child => (child as HTMLElement).style.transform = 'none');
@@ -602,12 +600,6 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
           backgroundColor: styleConfig.highlightStyle === 'subtitle' ? (styleConfig.backgroundColor || '#000000') : 'transparent',
           padding: styleConfig.highlightStyle === 'subtitle' ? '0.2em 0.4em' : '0',
           borderRadius: styleConfig.highlightStyle === 'subtitle' ? '0.2em' : '0',
-          // Slide-up: NO overflow:hidden needed here.
-          // AnimatedItem snaps opacity 0→1 in the first 8% of the slide spring
-          // (line ~727), so words are fully invisible at translateY=+40px start.
-          // overflow:hidden is pure clipping damage: it clips script/calligraphy
-          // font glyphs that overflow to the sides and large descenders at the bottom.
-          // Remove it entirely — the opacity fade already handles the masking.
         }}
       >
         {renderContent()}

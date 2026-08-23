@@ -6,7 +6,7 @@ import type { PlayerRef } from '@remotion/player';
 import { useProjectStore } from '@/store/useProjectStore';
 import { CaptionComposition } from '@/remotion/CaptionComposition';
 import { parseSrt } from '@/lib/srtParser';
-import { StylePanel } from './StylePanel';
+import { StylePanel, CustomCheckbox } from './StylePanel';
 import { Undo, Redo, Wand2, Repeat, RefreshCcw, Edit2, Check, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, AlertTriangle, BookOpen, Eraser } from 'lucide-react';
 
 export const Editor: React.FC = () => {
@@ -195,50 +195,49 @@ export const Editor: React.FC = () => {
     fetch('/auto.srt?t=' + Date.now()) // cache bust
       .then(res => res.text())
       .then(text => {
-        if (text) {
+        if (text && text.trim().length > 0) {
            const parsed = parseSrt(text);
-           const currentCaptions = captionsRef.current;
-           const merged = parsed.map(newCap => {
-             const oldCap = currentCaptions.find(c =>
-               c.id === newCap.id || Math.abs(c.startTime - newCap.startTime) < 1000
-             );
-             if (oldCap) {
-               return {
-                 ...newCap,
-                 highlightedWords: oldCap.highlightedWords || [],
-                 highlightedIndices: oldCap.highlightedIndices || [],
-                 customStyle: oldCap.customStyle
-               };
-             }
-             return newCap;
-           });
-           setCaptions(merged);
-           window.history.replaceState({}, '', window.location.pathname);
+           if (parsed && parsed.length > 0) {
+             const currentCaptions = captionsRef.current;
+             const merged = parsed.map(newCap => {
+               const oldCap = currentCaptions.find(c =>
+                 c.id === newCap.id || Math.abs(c.startTime - newCap.startTime) < 1000
+               );
+               if (oldCap) {
+                 return {
+                   ...newCap,
+                   highlightedWords: oldCap.highlightedWords || [],
+                   highlightedIndices: oldCap.highlightedIndices || [],
+                   customStyle: oldCap.customStyle
+                 };
+               }
+               return newCap;
+             });
+             setCaptions(merged);
+             window.history.replaceState({}, '', window.location.pathname);
+           }
         }
       })
       .catch(err => console.error(err));
-  }, [setCaptions]); // No `captions` dep — use captionsRef instead to prevent loop
+  }, [setCaptions]);
 
   useEffect(() => {
     if (!hasHydrated) return; // Wait for store to load from localStorage first!
     
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('autoLoad') === 'true') {
-      const fpsParam = urlParams.get('fps');
-      const projParam = urlParams.get('projectName');
-      if (projParam) {
-        setProjectName(projParam);
-      }
-      if (fpsParam) {
-        setVideoData(videoUrl || '', videoDuration || 0, parseFloat(fpsParam));
-      }
+    const isAutoLoad = urlParams.get('autoLoad') === 'true';
+    const fpsParam = urlParams.get('fps');
+    const projParam = urlParams.get('projectName');
+    if (projParam) {
+      setProjectName(projParam);
+    }
+    if (fpsParam) {
+      setVideoData(videoUrl || '', videoDuration || 0, parseFloat(fpsParam));
+    }
+    if (isAutoLoad || captions.length === 0) {
       loadFromTimeline();
     }
-    // Intentionally exclude loadFromTimeline from deps — it is stable (no captions dep).
-    // Including it caused an infinite loop: captions change → loadFromTimeline recreated
-    // → this effect re-runs → loadFromTimeline → captions change → …
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasHydrated, setVideoData, setProjectName, videoUrl, videoDuration]);
+  }, [hasHydrated, setVideoData, setProjectName, videoUrl, videoDuration, captions.length, loadFromTimeline]);
 
   const maxCanvasTime = captions.length > 0 ? captions[captions.length - 1].endTime : 0;
   
@@ -387,91 +386,93 @@ export const Editor: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen lg:overflow-hidden bg-black text-white p-4 gap-4 lg:gap-6 relative">
+    <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen lg:overflow-hidden bg-[#141416] text-[#e5e7eb] p-3 lg:p-4 gap-3 lg:gap-4 relative font-sans">
       {/* Invisible video element to grab metadata */}
       <video ref={videoRef} className="hidden" />
 
       {/* Left Sidebar: Captions, Render */}
       {isLeftPanelOpen && (
-        <div className="w-full lg:w-80 flex-shrink-0 bg-gray-900 border border-gray-800 flex flex-col rounded-xl relative z-10 lg:h-full">
+        <div className="w-full lg:w-80 flex-shrink-0 bg-[#18181c] border border-[#2b2b34] flex flex-col rounded-2xl relative z-10 lg:h-full shadow-2xl">
           {/* Watermark and Toggle */}
-          <div className="px-4 pt-5 pb-1 flex justify-between items-center flex-shrink-0">
-            <h1 className="text-white/30 text-base font-bold tracking-[0.15em] font-sans pointer-events-none select-none">
-              ALOK VIDEO EDITOR
-            </h1>
-            <button onClick={() => setIsLeftPanelOpen(false)} className="text-gray-400 hover:text-white transition p-1" title="Close Panel">
-              <PanelLeftClose className="w-5 h-5" />
+          <div className="px-4 py-3 flex justify-between items-center flex-shrink-0 border-b border-[#2b2b34]/80">
+            <div className="flex flex-col">
+              <h1 className="text-white text-xs font-extrabold tracking-[0.18em] font-sans select-none uppercase flex items-center gap-1.5">
+                <span className="text-blue-500">Auto Cap&apos;s</span> Style
+              </h1>
+              <span className="text-[10px] font-semibold text-blue-400/90 tracking-wider">
+                Alok Video Editor
+              </span>
+            </div>
+            <button onClick={() => setIsLeftPanelOpen(false)} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
+              <PanelLeftClose className="w-4 h-4" />
             </button>
           </div>
 
         {/* Caption List */}
-        <div className="flex-1 p-4 overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-gray-200">Captions</h2>
-            <div className="flex gap-2 items-center">              <button 
+        <div className="flex-1 p-3.5 overflow-y-auto">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-sm font-bold text-white tracking-wide">Captions</h2>
+            <div className="flex gap-1.5 items-center">
+              <button 
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   setIsMemoryBoxOpen(true);
                 }}
-                className="flex items-center gap-1 px-2 py-1 bg-purple-600 hover:bg-purple-500 rounded text-xs font-semibold text-white transition"
+                className="flex items-center gap-1 px-2.5 py-1 bg-[#282832] hover:bg-[#343440] border border-[#383844] rounded-lg text-xs font-semibold text-gray-200 transition"
                 title="View Memory Box (Highlighted Text)"
               >
-                <BookOpen className="w-3 h-3" /> Memory Box
+                <BookOpen className="w-3 h-3 text-blue-400" /> Memory Box
               </button>
 
               <button 
                 onClick={undo}
                 disabled={pastCaptions.length === 0}
-                className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed rounded hover:bg-[#282830]"
                 title="Undo"
               >
-                <Undo className="w-4 h-4" />
+                <Undo className="w-3.5 h-3.5" />
               </button>
               <button 
                 onClick={redo}
                 disabled={futureCaptions.length === 0}
-                className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed rounded hover:bg-[#282830]"
                 title="Redo"
               >
-                <Redo className="w-4 h-4" />
+                <Redo className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
           
-          <div className="flex flex-col gap-2 mb-4">
-            <label className="flex items-center gap-2 bg-gray-800/80 hover:bg-gray-700/80 p-3 rounded-lg border border-gray-700/50 cursor-pointer transition">
-              <input 
-                type="checkbox" 
+          <div className="flex flex-col gap-2 mb-3">
+            <div className="bg-[#212126] hover:bg-[#282830] p-2.5 rounded-xl border border-[#2e2e38] transition">
+              <CustomCheckbox
                 checked={highlightSimilar}
-                onChange={(e) => setHighlightSimilar(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-600 text-indigo-600 focus:ring-indigo-500 bg-gray-900"
+                onChange={setHighlightSimilar}
+                label="Select similar words automatically"
               />
-              <span className="text-sm font-medium text-gray-200">Select similar words automatically</span>
-            </label>
+            </div>
 
-            <div className="flex justify-between items-center bg-gray-800/80 p-3 rounded-lg border border-gray-700/50">
-              <span className="text-sm font-bold text-gray-200">Individual Styles</span>
+            <div className="flex justify-between items-center bg-[#212126] p-2.5 rounded-xl border border-[#2e2e38]">
+              <span className="text-xs font-semibold text-gray-300">Individual Styles</span>
               <button 
                 onClick={() => {
                   setIndividualStylingEnabled(!individualStylingEnabled);
                   if (individualStylingEnabled) setSelectedCaptionId(null);
                 }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${individualStylingEnabled ? 'bg-indigo-500' : 'bg-gray-600'}`}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${individualStylingEnabled ? 'bg-blue-600' : 'bg-gray-700'}`}
               >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${individualStylingEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${individualStylingEnabled ? 'translate-x-4' : 'translate-x-1'}`} />
               </button>
             </div>
             
             <button
               onClick={() => setConfirmAction({ type: 'reload', open: true })}
-              className="mt-2 w-full flex items-center justify-center gap-2 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 py-2 rounded-lg border border-indigo-500/30 transition text-sm font-medium"
+              className="mt-1 w-full flex items-center justify-center gap-2 bg-blue-600/15 hover:bg-blue-600/25 text-blue-400 py-2 rounded-xl border border-blue-500/30 transition text-xs font-semibold"
             >
-              <RefreshCcw className="w-4 h-4" />
+              <RefreshCcw className="w-3.5 h-3.5" />
               Re-Analyze Timeline Caption
             </button>
-            
-
           </div>
           
           <div className="space-y-2">
@@ -493,28 +494,28 @@ export const Editor: React.FC = () => {
                     playerRef.current.seekTo(frameToSeek);
                   }
                 }}
-                className={`p-3 rounded-lg border transition-all ${
+                className={`p-3 rounded-xl border transition-all ${
                   isSelected 
-                    ? 'bg-indigo-900/60 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.3)] cursor-default' 
+                    ? 'bg-blue-950/50 border-blue-500 ring-2 ring-blue-500/30 shadow-lg shadow-blue-950/50 cursor-default' 
                     : individualStylingEnabled 
-                      ? 'bg-gray-800 border-gray-700 hover:border-indigo-500/50 cursor-pointer'
-                      : 'bg-gray-800 border-gray-700/50 hover:border-indigo-500/30 cursor-pointer'
+                      ? 'bg-[#212126] border-[#2e2e38] hover:border-blue-500/50 cursor-pointer'
+                      : 'bg-[#212126] border-[#2e2e38] hover:border-gray-600 cursor-pointer'
                 }`}
               >
                 <div className="flex justify-between items-center mb-1">
-                  <div className="text-xs text-indigo-400 font-mono flex items-center gap-2">
+                  <div className="text-[11px] text-blue-400 font-mono flex items-center gap-2">
                     {cap.startTime}ms - {cap.endTime}ms
                     {editingCaptionId !== cap.id && (
-                      <div className="flex gap-2 items-center">
+                      <div className="flex gap-1.5 items-center">
                         <button 
                           onClick={(e) => { 
                             e.stopPropagation(); 
                             updateCaptionSegment(cap.id, { highlightedWords: [], highlightedIndices: [] });
                           }}
-                          className="text-gray-400 hover:text-red-400 hover:bg-red-400/10 text-[10px] font-medium flex items-center gap-1 bg-gray-800 px-1.5 py-0.5 rounded border border-gray-700 transition-colors"
+                          className="text-gray-400 hover:text-red-400 hover:bg-red-400/10 text-[9px] font-medium flex items-center gap-1 bg-[#18181c] px-1.5 py-0.5 rounded border border-[#2b2b34] transition-colors"
                           title="Remove all highlights in this caption"
                         >
-                          <Eraser className="w-3 h-3" /> Clear
+                          <Eraser className="w-2.5 h-2.5" /> Clear
                         </button>
                         <button 
                           onClick={(e) => { 
@@ -522,16 +523,16 @@ export const Editor: React.FC = () => {
                             setEditingCaptionId(cap.id); 
                             setEditingCaptionText(cap.text); 
                           }}
-                          className="text-gray-500 hover:text-white transition-colors"
+                          className="text-gray-500 hover:text-white transition-colors p-0.5"
                           title="Edit text"
                         >
-                          <Edit2 className="w-3 h-3" />
+                          <Edit2 className="w-2.5 h-2.5" />
                         </button>
                       </div>
                     )}
                   </div>
                   {hasCustomStyle && (
-                    <span className="text-[10px] bg-indigo-600 px-1.5 py-0.5 rounded text-white font-bold">STYLED</span>
+                    <span className="text-[9px] bg-blue-600 px-1.5 py-0.5 rounded text-white font-bold tracking-wider">STYLED</span>
                   )}
                 </div>
                 
@@ -540,14 +541,14 @@ export const Editor: React.FC = () => {
                     <textarea 
                       value={editingCaptionText}
                       onChange={(e) => setEditingCaptionText(e.target.value)}
-                      className="w-full bg-gray-900 text-white text-sm p-2 rounded border border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+                      className="w-full bg-[#141416] text-white text-xs p-2.5 rounded-lg border border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
                       rows={2}
                       autoFocus
                     />
                     <div className="flex justify-end gap-2">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setEditingCaptionId(null); }}
-                        className="px-2 py-1 bg-gray-700 hover:bg-gray-600 flex items-center gap-1 text-xs rounded text-white"
+                        className="px-2.5 py-1 bg-[#282830] hover:bg-[#34343d] flex items-center gap-1 text-xs rounded-lg text-gray-300"
                       >
                         <X className="w-3 h-3" /> Cancel
                       </button>
@@ -557,14 +558,14 @@ export const Editor: React.FC = () => {
                           updateCaptionSegment(cap.id, { text: editingCaptionText });
                           setEditingCaptionId(null); 
                         }}
-                        className="px-2 py-1 bg-green-600 hover:bg-green-500 flex items-center gap-1 text-xs rounded text-white font-bold"
+                        className="px-2.5 py-1 bg-green-600 hover:bg-green-500 flex items-center gap-1 text-xs rounded-lg text-white font-bold"
                       >
                         <Check className="w-3 h-3" /> Save
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-200 leading-relaxed flex flex-wrap gap-1 mt-2">
+                  <div className="text-xs text-gray-200 leading-relaxed flex flex-wrap gap-1 mt-1.5">
                     {cap.text.replace(/\n/g, ' \n ').split(' ').filter(w => w !== '').map((word, i) => {
                     if (word === '\n') {
                       return <div key={`br-${i}`} className="basis-full h-0 m-0 p-0" />;
@@ -580,10 +581,10 @@ export const Editor: React.FC = () => {
                           e.stopPropagation(); // prevent selecting the block if clicking a word
                           toggleHighlight(cap.id, word, i);
                         }}
-                        className={`cursor-pointer px-1.5 py-0.5 rounded transition-colors ${
+                        className={`cursor-pointer px-1.5 py-0.5 rounded-md transition-colors ${
                           isHighlighted 
-                            ? 'bg-indigo-500/30 text-indigo-300 font-medium' 
-                            : 'hover:bg-gray-700'
+                            ? 'bg-blue-600/30 text-blue-300 font-semibold border border-blue-500/40' 
+                            : 'hover:bg-[#282830]'
                         }`}
                       >
                         {word}
@@ -596,25 +597,25 @@ export const Editor: React.FC = () => {
               );
             })}
             {captions.length === 0 && (
-              <div className="text-sm text-gray-500 text-center py-8">
+              <div className="text-xs text-gray-500 text-center py-8">
                 Upload an SRT file to see captions here.
               </div>
             )}
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-800 space-y-2">
+        <div className="p-3.5 border-t border-[#2b2b34] space-y-2">
           <button 
             onClick={handleRender}
             disabled={captions.length === 0 || isRendering}
-            className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-blue-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-wider"
           >
             {isRendering ? `Rendering... ${renderProgress}%` : 'Render Final Video'}
           </button>
           
           <button 
             onClick={handleOpenFolder}
-            className="w-full bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition"
+            className="w-full bg-[#282832] hover:bg-[#343440] text-gray-200 border border-[#383844] font-semibold py-2 px-4 rounded-xl transition text-xs"
           >
             Open Renders Folder
           </button>
@@ -623,7 +624,7 @@ export const Editor: React.FC = () => {
             <a
               href={downloadUrl}
               download="Auto-Caps-Style-render.mov"
-              className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 transition"
+              className="bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 transition text-xs"
             >
               Download .MOV (ProRes)
             </a>
@@ -633,15 +634,15 @@ export const Editor: React.FC = () => {
       )}
 
       {/* Main Preview Area */}
-      <div className="flex-none lg:flex-1 w-full h-[50vh] lg:h-full bg-gray-950 flex flex-col items-center justify-center p-4 lg:p-8 border border-gray-800 rounded-xl relative">
+      <div className="flex-none lg:flex-1 w-full h-[50vh] lg:h-full bg-[#18181c] flex flex-col items-center justify-center p-3 lg:p-6 border border-[#2b2b34] rounded-2xl relative shadow-2xl">
         {!isLeftPanelOpen && (
-          <button onClick={() => setIsLeftPanelOpen(true)} className="absolute top-4 left-4 z-20 text-gray-400 hover:text-white bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-lg transition" title="Open Captions Panel">
-            <PanelLeftOpen className="w-5 h-5" />
+          <button onClick={() => setIsLeftPanelOpen(true)} className="absolute top-4 left-4 z-20 text-gray-400 hover:text-white bg-[#212126] p-2 rounded-xl border border-[#2e2e38] shadow-lg transition" title="Open Captions Panel">
+            <PanelLeftOpen className="w-4 h-4" />
           </button>
         )}
         {!isRightPanelOpen && (
-          <button onClick={() => setIsRightPanelOpen(true)} className="absolute top-4 right-4 z-20 text-gray-400 hover:text-white bg-gray-900 p-2 rounded-lg border border-gray-700 shadow-lg transition" title="Open Design Panel">
-            <PanelRightOpen className="w-5 h-5" />
+          <button onClick={() => setIsRightPanelOpen(true)} className="absolute top-4 right-4 z-20 text-gray-400 hover:text-white bg-[#212126] p-2 rounded-xl border border-[#2e2e38] shadow-lg transition" title="Open Design Panel">
+            <PanelRightOpen className="w-4 h-4" />
           </button>
         )}
 
@@ -649,8 +650,8 @@ export const Editor: React.FC = () => {
           isClient && (
             <div className="flex flex-col items-center w-full h-full justify-center relative">
               {isCaptionOutOfBounds && (
-                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-600/90 backdrop-blur text-white px-4 py-2 rounded-lg shadow-xl font-bold flex items-center gap-2 z-50 pointer-events-none border border-red-400">
-                  <AlertTriangle className="w-5 h-5" />
+                <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-600/90 backdrop-blur text-white px-4 py-2 rounded-xl shadow-xl font-bold flex items-center gap-2 z-50 pointer-events-none border border-red-400 text-xs">
+                  <AlertTriangle className="w-4 h-4" />
                   <span>Caption was Out of Canvas</span>
                 </div>
               )}
@@ -681,32 +682,45 @@ export const Editor: React.FC = () => {
                   maxHeight: 'calc(100% - 60px)',
                   maxWidth: styleConfig.aspectRatio === '16:9' ? '640px' : '360px',
                   aspectRatio: styleConfig.aspectRatio === '16:9' ? '16/9' : '9/16',
-                  boxShadow: '0 0 30px rgba(0,0,0,0.8)',
-                  border: '2px solid #000000',
+                  boxShadow: '0 0 35px rgba(0,0,0,0.9)',
+                  border: '2px solid #141416',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
                 }}
               />
               <button
                 onClick={() => setIsLooping(!isLooping)}
-                className={`mt-6 flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${isLooping ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                className={`mt-4 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                  isLooping 
+                    ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-600/30' 
+                    : 'bg-[#212126] border-[#2e2e38] text-gray-400 hover:text-white hover:bg-[#282830]'
+                }`}
               >
-                <Repeat className="w-4 h-4" />
+                <Repeat className="w-3.5 h-3.5" />
                 {isLooping ? 'Auto-Loop: ON' : 'Auto-Loop: OFF'}
               </button>
             </div>
           )
         ) : (
-          <div className="text-gray-500 text-center">
+          <div className="text-gray-500 text-center text-xs">
             <p>Upload a video or SRT file to see the preview</p>
           </div>
         )}
+
+        {/* Watermark Badge */}
+        <div className="absolute bottom-2.5 right-4 z-10 flex items-center gap-1.5 opacity-40 select-none pointer-events-none">
+          <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
+            Alok Video Editor
+          </span>
+        </div>
       </div>
 
       {/* Right Sidebar: Design & Animations */}
       {isRightPanelOpen && (
-        <div className="w-full lg:w-96 flex-shrink-0 bg-gray-900 border border-gray-800 lg:overflow-y-auto flex flex-col rounded-xl p-4 relative transform-gpu lg:h-full">
-          <div className="flex justify-end absolute top-4 right-4 z-20">
-            <button onClick={() => setIsRightPanelOpen(false)} className="text-gray-400 hover:text-white transition p-1" title="Close Panel">
-              <PanelRightClose className="w-5 h-5" />
+        <div className="w-full lg:w-96 flex-shrink-0 bg-[#18181c] border border-[#2b2b34] lg:overflow-y-auto flex flex-col rounded-2xl p-3 relative transform-gpu lg:h-full shadow-2xl">
+          <div className="flex justify-end absolute top-3.5 right-3.5 z-20">
+            <button onClick={() => setIsRightPanelOpen(false)} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
+              <PanelRightClose className="w-4 h-4" />
             </button>
           </div>
           <StylePanel />
@@ -714,20 +728,20 @@ export const Editor: React.FC = () => {
       )}
       {/* Confirmation Modal */}
       {confirmAction.open && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4">
-            <h3 className="text-xl font-bold text-white mb-2">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1c1c22] border border-[#2e2e38] rounded-2xl p-5 shadow-2xl max-w-sm w-full mx-4">
+            <h3 className="text-base font-bold text-white mb-2">
               {confirmAction.type === 'reload' ? 'Reload Captions?' : 'Auto Highlight?'}
             </h3>
-            <p className="text-gray-400 text-sm mb-6">
+            <p className="text-gray-400 text-xs mb-5 leading-relaxed">
               {confirmAction.type === 'reload' 
                 ? 'This will reload text and timing from DaVinci Resolve, while preserving your current custom styles and highlighted words! Proceed?' 
                 : 'This will overwrite your currently highlighted words. Are you sure you want to proceed?'}
             </p>
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-2.5">
               <button 
                 onClick={() => setConfirmAction({ ...confirmAction, open: false })}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700 transition"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-gray-300 bg-[#282832] hover:bg-[#343440] border border-[#383844] transition"
               >
                 No, cancel
               </button>
@@ -739,7 +753,7 @@ export const Editor: React.FC = () => {
                   if (confirmAction.type === 'auto') autoHighlightAll();
                   setConfirmAction({ ...confirmAction, open: false });
                 }}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 transition shadow-lg shadow-blue-600/20"
               >
                 Yes, proceed
               </button>
@@ -750,24 +764,24 @@ export const Editor: React.FC = () => {
 
       {/* Storage Warning Modal */}
       {storageWarning.show && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
-          <div className="bg-gray-800 border border-red-500/30 rounded-xl p-6 shadow-2xl max-w-md w-full mx-4 relative overflow-hidden">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-[#1c1c22] border border-red-500/40 rounded-2xl p-5 shadow-2xl max-w-md w-full mx-4 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-red-500/20 rounded-full flex-shrink-0">
-                <AlertTriangle className="w-6 h-6 text-red-500" />
+            <div className="flex items-start gap-3.5">
+              <div className="p-2.5 bg-red-500/20 rounded-xl flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-400" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white mb-2">Storage Warning</h3>
-                <p className="text-gray-300 text-sm mb-4 leading-relaxed">
+                <h3 className="text-base font-bold text-white mb-1.5">Storage Warning</h3>
+                <p className="text-gray-300 text-xs mb-4 leading-relaxed">
                   Your rendered videos have exceeded <span className="font-bold text-red-400">10 GB</span> of storage 
                   (Currently using <span className="font-bold text-white">{storageWarning.sizeGB.toFixed(2)} GB</span>). 
-                  Consider deleting old renders from the <span className="bg-gray-900 px-1.5 py-0.5 rounded text-gray-400 font-mono">public/renders</span> folder to free up space.
+                  Consider deleting old renders from the <span className="bg-[#141416] px-1.5 py-0.5 rounded text-gray-400 font-mono text-[11px]">public/renders</span> folder.
                 </p>
                 <div className="flex justify-end">
                   <button 
                     onClick={() => setStorageWarning({ ...storageWarning, show: false })}
-                    className="px-5 py-2 rounded-lg text-sm font-medium bg-red-600/90 text-white hover:bg-red-500 transition shadow-lg shadow-red-900/20"
+                    className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-red-600/90 text-white hover:bg-red-500 transition shadow-lg shadow-red-900/20"
                   >
                     I Understand
                   </button>
@@ -781,31 +795,31 @@ export const Editor: React.FC = () => {
       {/* Right Sidebar: Video Preview, Memory Box, Export */}
       {isMemoryBoxOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
           onClick={() => setIsMemoryBoxOpen(false)}
         >
           <div 
-            className="bg-gray-900 border border-purple-500/30 rounded-xl p-6 shadow-[0_0_50px_rgba(168,85,247,0.15)] w-full max-w-2xl max-h-[80vh] flex flex-col"
+            className="bg-[#18181c] border border-[#2b2b34] rounded-2xl p-5 shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <BookOpen className="w-6 h-6 text-purple-400" />
+            <div className="flex justify-between items-center mb-3 pb-2 border-b border-[#2b2b34]/80">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-blue-400" />
                 Memory Box
               </h3>
               <button 
                 onClick={(e) => { e.stopPropagation(); setIsMemoryBoxOpen(false); }}
-                className="text-gray-400 hover:text-white transition bg-gray-800 hover:bg-gray-700 p-1 rounded-lg"
+                className="text-gray-400 hover:text-white transition bg-[#212126] hover:bg-[#282830] p-1 rounded-lg border border-[#2e2e38]"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
             
-            <p className="text-gray-400 text-sm mb-4">
-              Here are all the words and phrases you have highlighted in your video captions.
+            <p className="text-gray-400 text-xs mb-3">
+              Words and phrases you have highlighted in your video captions.
             </p>
 
-            <div className="flex-1 overflow-y-auto bg-gray-950 rounded-lg p-4 border border-gray-800 space-y-6">
+            <div className="flex-1 overflow-y-auto bg-[#141416] rounded-xl p-3.5 border border-[#2b2b34] space-y-4">
               {captions.some(c => c.highlightedWords && c.highlightedWords.length > 0) ? (
                 (() => {
                   const allWords = captions.flatMap((c) => {
@@ -847,10 +861,10 @@ export const Editor: React.FC = () => {
                     <>
                       {englishWords.length > 0 && (
                         <div>
-                          <h4 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-gray-800">English</h4>
-                          <div className="flex flex-wrap gap-2">
+                          <h4 className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2 pb-1 border-b border-[#2b2b34]">English</h4>
+                          <div className="flex flex-wrap gap-1.5">
                             {englishWords.map((word, index) => (
-                              <span key={`en-${word}-${index}`} className="px-3 py-1.5 bg-purple-500/20 border border-purple-500/40 text-purple-200 rounded-md text-sm font-medium">
+                              <span key={`en-${word}-${index}`} className="px-2.5 py-1 bg-blue-600/20 border border-blue-500/30 text-blue-300 rounded-lg text-xs font-semibold">
                                 {word}
                               </span>
                             ))}
@@ -860,10 +874,10 @@ export const Editor: React.FC = () => {
                       
                       {hindiNepaliWords.length > 0 && (
                         <div>
-                          <h4 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-gray-800">Hindi / Nepali</h4>
-                          <div className="flex flex-wrap gap-2">
+                          <h4 className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2 pb-1 border-b border-[#2b2b34]">Hindi / Nepali</h4>
+                          <div className="flex flex-wrap gap-1.5">
                             {hindiNepaliWords.map((word, index) => (
-                              <span key={`hn-${word}-${index}`} className="px-3 py-1.5 bg-blue-500/20 border border-blue-500/40 text-blue-200 rounded-md text-sm font-medium">
+                              <span key={`hn-${word}-${index}`} className="px-2.5 py-1 bg-orange-500/20 border border-orange-500/30 text-orange-300 rounded-lg text-xs font-semibold">
                                 {word}
                               </span>
                             ))}
@@ -873,10 +887,10 @@ export const Editor: React.FC = () => {
 
                       {otherWords.length > 0 && (
                         <div>
-                          <h4 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-gray-800">Numbers / Symbols</h4>
-                          <div className="flex flex-wrap gap-2">
+                          <h4 className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-2 pb-1 border-b border-[#2b2b34]">Numbers / Symbols</h4>
+                          <div className="flex flex-wrap gap-1.5">
                             {otherWords.map((word, index) => (
-                              <span key={`oth-${word}-${index}`} className="px-3 py-1.5 bg-gray-500/20 border border-gray-500/40 text-gray-300 rounded-md text-sm font-medium">
+                              <span key={`oth-${word}-${index}`} className="px-2.5 py-1 bg-gray-600/20 border border-gray-500/30 text-gray-300 rounded-lg text-xs font-semibold">
                                 {word}
                               </span>
                             ))}
@@ -887,18 +901,18 @@ export const Editor: React.FC = () => {
                   );
                 })()
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                  <BookOpen className="w-12 h-12 mb-3 opacity-20" />
-                  <p>Your Memory Box is empty.</p>
-                  <p className="text-xs mt-1">Highlight some words to see them here.</p>
+                <div className="h-full flex flex-col items-center justify-center text-gray-500 py-8">
+                  <BookOpen className="w-10 h-10 mb-2 opacity-30" />
+                  <p className="text-xs">Your Memory Box is empty.</p>
+                  <p className="text-[10px] text-gray-600 mt-0.5">Highlight words in your captions to collect them.</p>
                 </div>
               )}
             </div>
             
-            <div className="mt-4 flex justify-end">
+            <div className="mt-3.5 flex justify-end">
               <button 
                 onClick={(e) => { e.stopPropagation(); setIsMemoryBoxOpen(false); }}
-                className="px-6 py-2 rounded-lg text-sm font-medium bg-purple-600 text-white hover:bg-purple-500 transition shadow-lg shadow-purple-500/20"
+                className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 transition shadow-lg shadow-blue-600/20"
               >
                 Done
               </button>
@@ -910,20 +924,20 @@ export const Editor: React.FC = () => {
       {/* Rendering Overlay */}
       {isRendering && (
         <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-[100] cursor-not-allowed"
+          className="fixed inset-0 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center z-[100] cursor-not-allowed"
           onContextMenu={(e) => e.preventDefault()}
         >
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-yellow-500 mb-6"></div>
-          <h2 className="text-3xl font-bold text-white mb-2">Rendering Video</h2>
-          <p className="text-gray-300 text-lg mb-8">Please wait, do not close the plugin...</p>
+          <div className="animate-spin rounded-full h-14 w-14 border-t-3 border-b-3 border-blue-500 mb-5"></div>
+          <h2 className="text-xl font-bold text-white mb-1.5 tracking-wide">Rendering Video</h2>
+          <p className="text-gray-400 text-xs mb-6">Processing frames in DaVinci Resolve format...</p>
           
-          <div className="w-64 h-4 bg-gray-800 rounded-full overflow-hidden border border-gray-700">
+          <div className="w-64 h-3 bg-[#18181c] rounded-full overflow-hidden border border-[#2b2b34]">
             <div 
-              className="h-full bg-yellow-500 transition-all duration-300"
+              className="h-full bg-blue-600 transition-all duration-300"
               style={{ width: `${Math.max(5, renderProgress)}%` }}
             ></div>
           </div>
-          <p className="mt-3 text-yellow-500 font-mono font-bold text-xl">{renderProgress}%</p>
+          <p className="mt-2.5 text-blue-400 font-mono font-bold text-base">{renderProgress}%</p>
         </div>
       )}
     </div>
