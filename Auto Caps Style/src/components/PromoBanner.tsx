@@ -14,6 +14,18 @@ interface AdConfig {
 const PRIMARY_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/ad.json';
 const FALLBACK_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/master/ad.json';
 
+const resolveDirectImageUrl = (url?: string): string => {
+  if (!url) return '';
+  let clean = url.trim();
+  // Automatically convert GitHub blob / raw view URLs to direct CDN URLs
+  if (clean.includes('github.com') && clean.includes('/blob/')) {
+    clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+  } else if (clean.includes('github.com') && clean.includes('/raw/')) {
+    clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/raw/', '/');
+  }
+  return clean;
+};
+
 export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }) => {
   const [adConfig, setAdConfig] = useState<AdConfig | null>(null);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -31,7 +43,10 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
         if (res.ok) {
           const data: AdConfig = await res.json();
           if (isMounted && data && data.enabled && data.imageUrl) {
-            setAdConfig(data);
+            setAdConfig({
+              ...data,
+              imageUrl: resolveDirectImageUrl(data.imageUrl)
+            });
           }
         }
       } catch (err) {
