@@ -192,7 +192,7 @@ export const Editor: React.FC = () => {
   // loadFromTimeline reads captions via captionsRef to avoid stale-closure re-render loops.
   // It is intentionally NOT dependent on `captions` so the autoLoad useEffect below
   // only fires once (on hydration) and not every time captions change.
-  const loadFromTimeline = useCallback(() => {
+  const loadFromTimeline = useCallback((forceReload = false) => {
     fetch('/auto.srt?t=' + Date.now()) // cache bust
       .then(res => res.text())
       .then(text => {
@@ -200,10 +200,16 @@ export const Editor: React.FC = () => {
            const parsed = parseSrt(text);
            if (parsed && parsed.length > 0) {
              const currentCaptions = captionsRef.current;
+             // If user already has saved customizations in history and this is not a forced reload, preserve them!
+             if (!forceReload && currentCaptions && currentCaptions.length > 0) {
+               window.history.replaceState({}, '', window.location.pathname);
+               return;
+             }
+             
              const merged = parsed.map(newCap => {
-               const oldCap = currentCaptions.find(c =>
+               const oldCap = currentCaptions ? currentCaptions.find(c =>
                  c.id === newCap.id || Math.abs(c.startTime - newCap.startTime) < 1000
-               );
+               ) : undefined;
                if (oldCap) {
                  return {
                    ...newCap,
@@ -226,7 +232,7 @@ export const Editor: React.FC = () => {
     if (!hasHydrated) return; // Wait for store to load from localStorage first!
     
     const urlParams = new URLSearchParams(window.location.search);
-    const isAutoLoad = urlParams.get('autoLoad') === 'true';
+    const isForceReload = urlParams.get('forceReload') === 'true';
     const fpsParam = urlParams.get('fps');
     const projParam = urlParams.get('projectName');
     if (projParam) {
@@ -235,8 +241,10 @@ export const Editor: React.FC = () => {
     if (fpsParam) {
       setVideoData(videoUrl || '', videoDuration || 0, parseFloat(fpsParam));
     }
-    if (isAutoLoad || captions.length === 0) {
-      loadFromTimeline();
+    
+    // Only fetch fresh if captions are completely empty or user requested force reload
+    if (captions.length === 0 || isForceReload) {
+      loadFromTimeline(isForceReload);
     }
   }, [hasHydrated, setVideoData, setProjectName, videoUrl, videoDuration, captions.length, loadFromTimeline]);
 
