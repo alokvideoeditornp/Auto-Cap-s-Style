@@ -17,7 +17,6 @@ const FALLBACK_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Aut
 const resolveDirectImageUrl = (url?: string): string => {
   if (!url) return '';
   let clean = url.trim();
-  // Automatically convert GitHub blob / raw view URLs to direct CDN URLs
   if (clean.includes('github.com') && clean.includes('/blob/')) {
     clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
   } else if (clean.includes('github.com') && clean.includes('/raw/')) {
@@ -50,7 +49,7 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
           }
         }
       } catch (err) {
-        // Silently fail if offline or repo is empty
+        // Silently fail if offline
       }
     };
 
@@ -65,10 +64,26 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
   }
 
   const handleClick = (e: React.MouseEvent) => {
-    if (adConfig.link) {
-      e.preventDefault();
-      window.open(adConfig.link, '_blank', 'noopener,noreferrer');
-    }
+    e.preventDefault();
+    e.stopPropagation();
+    if (!adConfig.link) return;
+
+    const targetUrl = adConfig.link.trim();
+
+    // 1. Call background server API (opens in system default browser like Chrome / Edge)
+    fetch('/api/open-external', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: targetUrl })
+    }).catch(() => {});
+
+    // 2. Trigger hash navigation for Qt WebEngine listener
+    window.location.hash = 'openBrowser=' + encodeURIComponent(targetUrl);
+
+    // 3. Fallback window.open
+    try {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    } catch (_) {}
   };
 
   return (
@@ -104,9 +119,12 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
           className={`w-full h-auto object-cover rounded-xl transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 h-24 bg-[#21212a] animate-pulse'}`}
         />
         
-        {/* Subtle hover overlay hint */}
+        {/* Hover overlay button */}
         {adConfig.link && (
-          <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded bg-black/70 px-2 py-1 text-[10px] font-medium text-white opacity-0 backdrop-blur-md transition-opacity duration-200 group-hover:opacity-100">
+          <div 
+            onClick={handleClick}
+            className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-md bg-black/80 hover:bg-blue-600 px-2.5 py-1 text-[11px] font-semibold text-white shadow-md backdrop-blur-md transition-all duration-200"
+          >
             <span>Open</span>
             <ExternalLink className="h-3 w-3" />
           </div>
