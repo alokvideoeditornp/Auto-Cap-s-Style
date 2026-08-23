@@ -34,7 +34,6 @@ const resolveDirectImageUrl = (url?: string): string => {
   return clean;
 };
 
-// 1 or true means ON, 0 or false means OFF
 const isItemEnabled = (val: any): boolean => {
   if (val === undefined || val === null) return true;
   if (val === 1 || val === '1' || val === true || val === 'true') return true;
@@ -42,7 +41,10 @@ const isItemEnabled = (val: any): boolean => {
   return Boolean(val);
 };
 
-export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }> = ({ 
+  className = '',
+  dismissible = false
+}) => {
   const [adList, setAdList] = useState<SingleAd[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -64,7 +66,6 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
 
           let list: SingleAd[] = [];
           if (Array.isArray(data.ads) && data.ads.length > 0) {
-            // Filter: only include ads where enabled is 1 or true
             list = data.ads
               .filter((ad: any) => isItemEnabled(ad.enabled) && !!ad.imageUrl)
               .map((ad: any) => ({
@@ -97,16 +98,16 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
 
   // Auto-rotation timer for multiple ads (changes every 6 seconds)
   useEffect(() => {
-    if (adList.length <= 1 || isPaused || isDismissed) return;
+    if (adList.length <= 1 || isPaused || (dismissible && isDismissed)) return;
 
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % adList.length);
     }, 6000);
 
     return () => clearInterval(timer);
-  }, [adList.length, isPaused, isDismissed]);
+  }, [adList.length, isPaused, dismissible, isDismissed]);
 
-  if (adList.length === 0 || isDismissed) {
+  if (adList.length === 0 || (dismissible && isDismissed)) {
     return null;
   }
 
@@ -193,17 +194,19 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
             </div>
           )}
 
-          {/* Close Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsDismissed(true);
-            }}
-            title="Dismiss ad"
-            className="flex h-5 w-5 items-center justify-center rounded-md text-gray-400 hover:bg-[#282834] hover:text-white transition-all"
-          >
-            <X className="h-3 w-3" />
-          </button>
+          {/* Close Button only if dismissible is true */}
+          {dismissible && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsDismissed(true);
+              }}
+              title="Dismiss ad"
+              className="flex h-5 w-5 items-center justify-center rounded-md text-gray-400 hover:bg-[#282834] hover:text-white transition-all"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
       </div>
 

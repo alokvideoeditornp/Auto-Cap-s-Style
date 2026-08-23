@@ -657,7 +657,7 @@ export const StylePanel = () => {
         </div>
       )}
 
-      <PromoBanner className="mb-4" />
+      <PromoBanner className="mb-4" dismissible={true} />
 
       <AccordionItem 
         title="Video Settings" 

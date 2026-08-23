@@ -621,7 +621,7 @@ export const Editor: React.FC = () => {
             Open Renders Folder
           </button>
 
-          <PromoBanner className="mt-2" />
+          <PromoBanner className="mt-2" dismissible={false} />
 
           {downloadUrl && (
             <a
