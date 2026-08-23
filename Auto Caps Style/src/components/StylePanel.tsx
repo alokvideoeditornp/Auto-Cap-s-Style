@@ -1,3 +1,4 @@
+import { PromoBanner } from './PromoBanner';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useProjectStore, StyleConfig, defaultStyle } from '@/store/useProjectStore';
@@ -655,6 +656,8 @@ export const StylePanel = () => {
           Editing Global Styles (All Captions)
         </div>
       )}
+
+      <PromoBanner className="mb-4" />
 
       <AccordionItem 
         title="Video Settings" 

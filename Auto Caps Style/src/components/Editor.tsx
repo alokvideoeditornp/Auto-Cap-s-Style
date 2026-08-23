@@ -7,6 +7,7 @@ import { useProjectStore } from '@/store/useProjectStore';
 import { CaptionComposition } from '@/remotion/CaptionComposition';
 import { parseSrt } from '@/lib/srtParser';
 import { StylePanel, CustomCheckbox } from './StylePanel';
+import { PromoBanner } from './PromoBanner';
 import { Undo, Redo, Wand2, Repeat, RefreshCcw, Edit2, Check, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, AlertTriangle, BookOpen, Eraser } from 'lucide-react';
 
 export const Editor: React.FC = () => {
@@ -619,6 +620,8 @@ export const Editor: React.FC = () => {
           >
             Open Renders Folder
           </button>
+
+          <PromoBanner className="mt-2" />
 
           {downloadUrl && (
             <a
