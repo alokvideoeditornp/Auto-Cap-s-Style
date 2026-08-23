@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SingleAd {
+  enabled?: boolean;
   imageUrl: string;
   link?: string;
   altText?: string;
@@ -17,7 +18,6 @@ interface AdConfig {
   altText?: string;
   badge?: string;
   ads?: SingleAd[];
-  autoRotateSeconds?: number;
 }
 
 const PRIMARY_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/ad.json';
@@ -56,11 +56,14 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
 
           let list: SingleAd[] = [];
           if (Array.isArray(data.ads) && data.ads.length > 0) {
-            list = data.ads.map((ad: any) => ({
-              ...ad,
-              imageUrl: resolveDirectImageUrl(ad.imageUrl)
-            })).filter((ad: SingleAd) => !!ad.imageUrl);
-          } else if (data.imageUrl) {
+            // Filter out any individual ad that has enabled: false
+            list = data.ads
+              .filter((ad: any) => ad.enabled !== false && !!ad.imageUrl)
+              .map((ad: any) => ({
+                ...ad,
+                imageUrl: resolveDirectImageUrl(ad.imageUrl)
+              }));
+          } else if (data.imageUrl && data.enabled !== false) {
             list = [{
               imageUrl: resolveDirectImageUrl(data.imageUrl),
               link: data.link,
