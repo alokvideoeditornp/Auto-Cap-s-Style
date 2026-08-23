@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SingleAd {
-  enabled?: boolean;
+  enabled?: boolean | number | string;
   imageUrl: string;
   link?: string;
   altText?: string;
@@ -12,7 +12,7 @@ interface SingleAd {
 }
 
 interface AdConfig {
-  enabled: boolean;
+  enabled: boolean | number | string;
   imageUrl?: string;
   link?: string;
   altText?: string;
@@ -34,6 +34,14 @@ const resolveDirectImageUrl = (url?: string): string => {
   return clean;
 };
 
+// 1 or true means ON, 0 or false means OFF
+const isItemEnabled = (val: any): boolean => {
+  if (val === undefined || val === null) return true;
+  if (val === 1 || val === '1' || val === true || val === 'true') return true;
+  if (val === 0 || val === '0' || val === false || val === 'false') return false;
+  return Boolean(val);
+};
+
 export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }) => {
   const [adList, setAdList] = useState<SingleAd[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -52,18 +60,18 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
         }
         if (res.ok) {
           const data = await res.json();
-          if (!isMounted || !data || data.enabled === false) return;
+          if (!isMounted || !data || !isItemEnabled(data.enabled)) return;
 
           let list: SingleAd[] = [];
           if (Array.isArray(data.ads) && data.ads.length > 0) {
-            // Filter out any individual ad that has enabled: false
+            // Filter: only include ads where enabled is 1 or true
             list = data.ads
-              .filter((ad: any) => ad.enabled !== false && !!ad.imageUrl)
+              .filter((ad: any) => isItemEnabled(ad.enabled) && !!ad.imageUrl)
               .map((ad: any) => ({
                 ...ad,
                 imageUrl: resolveDirectImageUrl(ad.imageUrl)
               }));
-          } else if (data.imageUrl && data.enabled !== false) {
+          } else if (data.imageUrl && isItemEnabled(data.enabled)) {
             list = [{
               imageUrl: resolveDirectImageUrl(data.imageUrl),
               link: data.link,
