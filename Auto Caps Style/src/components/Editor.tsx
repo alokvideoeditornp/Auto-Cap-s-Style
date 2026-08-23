@@ -18,6 +18,9 @@ export const Editor: React.FC = () => {
   const updateCaptionSegment = useProjectStore((state) => state.updateCaptionSegment);
   const setIndividualStylingEnabled = useProjectStore((state) => state.setIndividualStylingEnabled);
   const setSelectedCaptionId = useProjectStore((state) => state.setSelectedCaptionId);
+  const setStyleConfig = useProjectStore((state) => state.setStyleConfig);
+  const customPresets = useProjectStore((state) => state.customPresets);
+  const customColors = useProjectStore((state) => state.customColors);
 
   const highlightSimilar = useProjectStore((state) => state.highlightSimilar);
   const setHighlightSimilar = useProjectStore((state) => state.setHighlightSimilar);
@@ -311,6 +314,71 @@ export const Editor: React.FC = () => {
   useEffect(() => {
     setTimeout(() => setIsClient(true), 0);
   }, []);
+
+  
+  // Server-Side Disk Auto-Save
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialLoadDone = useRef<boolean>(false);
+
+  // 1. Initial State Load from Server-Side Disk File
+  useEffect(() => {
+    const loadSavedState = async () => {
+      try {
+        const res = await fetch('/api/project-state?t=' + Date.now());
+        if (res.ok) {
+          const json = await res.json();
+          if (json.exists && json.data) {
+            if (json.data.styleConfig) {
+              setStyleConfig(json.data.styleConfig);
+            }
+            if (Array.isArray(json.data.captions) && json.data.captions.length > 0) {
+              setCaptions(json.data.captions);
+            }
+            isInitialLoadDone.current = true;
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load server state:', err);
+      } finally {
+        isInitialLoadDone.current = true;
+        if (captions.length === 0) {
+          loadFromTimeline(false);
+        }
+      }
+    };
+
+    loadSavedState();
+  }, []);
+
+  // 2. Debounced Auto-Save to Disk whenever State Changes
+  useEffect(() => {
+    if (!isInitialLoadDone.current) return;
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await fetch('/api/project-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            styleConfig,
+            captions,
+            customPresets,
+            customColors,
+            projectName,
+            updatedAt: Date.now()
+          })
+        });
+      } catch (err) {
+        console.error('Auto-save error:', err);
+      }
+    }, 500);
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [styleConfig, captions, customPresets, customColors, projectName]);
 
   const handleOpenFolder = async () => {
     try {

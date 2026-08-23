@@ -1924,6 +1924,7 @@ export const StylePanel = () => {
             <button 
               className="w-full text-left p-3 rounded-lg bg-red-900/30 border border-red-800/50 hover:bg-red-900/50 transition flex flex-col gap-1"
               onClick={() => {
+                fetch('/api/project-state', { method: 'DELETE' }).catch(() => {});
                 setStyleConfig(defaultStyle);
                 setCaptions(captions.map(c => ({ 
                   ...c, 
