@@ -1,7 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { X, ExternalLink } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+
+interface SingleAd {
+  imageUrl: string;
+  link?: string;
+  altText?: string;
+  badge?: string;
+}
 
 interface AdConfig {
   enabled: boolean;
@@ -9,6 +16,8 @@ interface AdConfig {
   link?: string;
   altText?: string;
   badge?: string;
+  ads?: SingleAd[];
+  autoRotateSeconds?: number;
 }
 
 const PRIMARY_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/ad.json';
@@ -26,13 +35,15 @@ const resolveDirectImageUrl = (url?: string): string => {
 };
 
 export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }) => {
-  const [adConfig, setAdConfig] = useState<AdConfig | null>(null);
+  const [adList, setAdList] = useState<SingleAd[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [loadedImages, setLoadedImages] = useState<{ [key: number]: boolean }>({});
 
   useEffect(() => {
     let isMounted = true;
-    const fetchAd = async () => {
+    const fetchAds = async () => {
       try {
         const timestamp = Date.now();
         let res = await fetch(`${PRIMARY_AD_URL}?t=${timestamp}`, { cache: 'no-store' });
@@ -40,12 +51,26 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
           res = await fetch(`${FALLBACK_AD_URL}?t=${timestamp}`, { cache: 'no-store' });
         }
         if (res.ok) {
-          const data: AdConfig = await res.json();
-          if (isMounted && data && data.enabled && data.imageUrl) {
-            setAdConfig({
-              ...data,
-              imageUrl: resolveDirectImageUrl(data.imageUrl)
-            });
+          const data = await res.json();
+          if (!isMounted || !data || data.enabled === false) return;
+
+          let list: SingleAd[] = [];
+          if (Array.isArray(data.ads) && data.ads.length > 0) {
+            list = data.ads.map((ad: any) => ({
+              ...ad,
+              imageUrl: resolveDirectImageUrl(ad.imageUrl)
+            })).filter((ad: SingleAd) => !!ad.imageUrl);
+          } else if (data.imageUrl) {
+            list = [{
+              imageUrl: resolveDirectImageUrl(data.imageUrl),
+              link: data.link,
+              altText: data.altText,
+              badge: data.badge
+            }];
+          }
+
+          if (list.length > 0) {
+            setAdList(list);
           }
         }
       } catch (err) {
@@ -53,22 +78,35 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
       }
     };
 
-    fetchAd();
+    fetchAds();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  if (!adConfig || !adConfig.enabled || !adConfig.imageUrl || isDismissed) {
+  // Auto-rotation timer for multiple ads (changes every 6 seconds)
+  useEffect(() => {
+    if (adList.length <= 1 || isPaused || isDismissed) return;
+
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % adList.length);
+    }, 6000);
+
+    return () => clearInterval(timer);
+  }, [adList.length, isPaused, isDismissed]);
+
+  if (adList.length === 0 || isDismissed) {
     return null;
   }
 
-  const handleClick = (e: React.MouseEvent) => {
+  const currentAd = adList[currentIndex] || adList[0];
+
+  const handleOpenLink = (e: React.MouseEvent, link?: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!adConfig.link) return;
+    if (!link) return;
 
-    const targetUrl = adConfig.link.trim();
+    const targetUrl = link.trim();
 
     // 1. Call background server API (opens in system default browser)
     fetch('/api/open-external', {
@@ -86,55 +124,119 @@ export const PromoBanner: React.FC<{ className?: string }> = ({ className = '' }
     } catch (_) {}
   };
 
-  return (
-    <div className={`group overflow-hidden rounded-xl border border-[#2b2b36] bg-[#181820] p-2 shadow-lg transition-all duration-300 hover:border-blue-500/50 hover:shadow-blue-500/10 ${className}`}>
-      {/* Top Header Row - Badge and Close Button sitting neatly ABOVE the image */}
-      <div className="flex items-center justify-between mb-1.5 px-1">
-        {adConfig.badge ? (
-          <span className="rounded bg-blue-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-sm">
-            {adConfig.badge}
-          </span>
-        ) : (
-          <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400">
-            Sponsored
-          </span>
-        )}
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev - 1 + adList.length) % adList.length);
+  };
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsDismissed(true);
-          }}
-          title="Dismiss ad"
-          className="flex h-5 w-5 items-center justify-center rounded-md text-gray-400 hover:bg-[#282834] hover:text-white transition-all"
-        >
-          <X className="h-3 w-3" />
-        </button>
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % adList.length);
+  };
+
+  return (
+    <div 
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      className={`group overflow-hidden rounded-xl border border-[#2b2b36] bg-[#181820] p-2 shadow-lg transition-all duration-300 hover:border-blue-500/50 hover:shadow-blue-500/10 ${className}`}
+    >
+      {/* Top Header Row */}
+      <div className="flex items-center justify-between mb-1.5 px-1">
+        <div className="flex items-center gap-2">
+          {currentAd.badge ? (
+            <span className="rounded bg-blue-600 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-sm transition-all">
+              {currentAd.badge}
+            </span>
+          ) : (
+            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400">
+              Sponsored
+            </span>
+          )}
+
+          {/* Multiple Ads Indicator Counter */}
+          {adList.length > 1 && (
+            <span className="text-[9px] font-mono text-gray-500 font-medium">
+              {currentIndex + 1}/{adList.length}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1">
+          {/* Navigation Arrows if > 1 ad */}
+          {adList.length > 1 && (
+            <div className="flex items-center gap-0.5 mr-1">
+              <button
+                onClick={handlePrev}
+                title="Previous Ad"
+                className="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-[#282834] hover:text-white transition"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={handleNext}
+                title="Next Ad"
+                className="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-[#282834] hover:text-white transition"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Close Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDismissed(true);
+            }}
+            title="Dismiss ad"
+            className="flex h-5 w-5 items-center justify-center rounded-md text-gray-400 hover:bg-[#282834] hover:text-white transition-all"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
       </div>
 
-      {/* Clickable Image - 100% Unobstructed & Clean */}
+      {/* Clickable Image Banner */}
       <div 
-        onClick={handleClick}
+        onClick={(e) => handleOpenLink(e, currentAd.link)}
         className="relative block cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 hover:scale-[1.01]"
       >
         <img
-          src={adConfig.imageUrl}
-          alt={adConfig.altText || 'Sponsored Promotion'}
-          onLoad={() => setImageLoaded(true)}
-          className={`w-full h-auto object-cover rounded-lg transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0 h-20 bg-[#21212a] animate-pulse'}`}
+          key={currentAd.imageUrl}
+          src={currentAd.imageUrl}
+          alt={currentAd.altText || 'Sponsored Promotion'}
+          onLoad={() => setLoadedImages(prev => ({ ...prev, [currentIndex]: true }))}
+          className={`w-full h-auto object-cover rounded-lg transition-all duration-300 ${loadedImages[currentIndex] ? 'opacity-100' : 'opacity-0 h-20 bg-[#21212a] animate-pulse'}`}
         />
         
         {/* Hover overlay hint */}
-        {adConfig.link && (
+        {currentAd.link && (
           <div 
-            onClick={handleClick}
-            className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-md bg-black/80 hover:bg-blue-600 px-2 py-0.5 text-[10px] font-semibold text-white shadow-md backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-200"
+            onClick={(e) => handleOpenLink(e, currentAd.link)}
+            className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-md bg-black/80 hover:bg-blue-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-md backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-200"
           >
             <span>Open</span>
             <ExternalLink className="h-3 w-3" />
           </div>
         )}
       </div>
+
+      {/* Dot Indicators if > 1 ad */}
+      {adList.length > 1 && (
+        <div className="flex items-center justify-center gap-1.5 mt-2">
+          {adList.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentIndex(idx)}
+              className={`h-1.5 rounded-full transition-all ${
+                currentIndex === idx 
+                  ? 'w-4 bg-blue-500' 
+                  : 'w-1.5 bg-gray-600 hover:bg-gray-400'
+              }`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
