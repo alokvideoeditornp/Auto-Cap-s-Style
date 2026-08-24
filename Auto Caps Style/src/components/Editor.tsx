@@ -756,13 +756,22 @@ export const Editor: React.FC = () => {
                 loop={isLooping}
                 autoPlay
                 acknowledgeRemotionLicense={true}
-                style={{
+                style={styleConfig.aspectRatio === '16:9' ? {
+                  width: '100%',
+                  maxWidth: 'min(100%, calc((100vh - 180px) * 16 / 9))',
+                  maxHeight: 'calc(100% - 65px)',
+                  aspectRatio: '16 / 9',
+                  boxShadow: '0 0 45px rgba(0,0,0,0.95)',
+                  border: '2px solid #24242e',
+                  borderRadius: '14px',
+                  overflow: 'hidden',
+                } : {
                   height: '100%',
                   maxHeight: 'calc(100% - 65px)',
-                  maxWidth: '100%',
-                  aspectRatio: styleConfig.aspectRatio === '16:9' ? '16/9' : '9/16',
-                  boxShadow: '0 0 45px rgba(0,0,0,0.9)',
-                  border: '2px solid #141416',
+                  maxWidth: 'min(100%, calc((100vh - 180px) * 9 / 16))',
+                  aspectRatio: '9 / 16',
+                  boxShadow: '0 0 45px rgba(0,0,0,0.95)',
+                  border: '2px solid #24242e',
                   borderRadius: '14px',
                   overflow: 'hidden',
                 }}
