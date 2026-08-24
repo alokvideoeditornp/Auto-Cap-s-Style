@@ -820,13 +820,8 @@ export const Editor: React.FC = () => {
 
       {/* Right Sidebar: Design & Animations */}
       {isRightPanelOpen && (
-        <div className="w-[300px] lg:w-[320px] xl:w-[380px] 2xl:w-[440px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] overflow-y-auto flex flex-col rounded-2xl p-3 relative transform-gpu h-full shadow-2xl transition-all duration-200">
-          <div className="flex justify-end absolute top-3.5 right-3.5 z-20">
-            <button onClick={() => setIsRightPanelOpen(false)} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
-              <PanelRightClose className="w-4 h-4" />
-            </button>
-          </div>
-          <StylePanel />
+        <div className="w-[320px] lg:w-[340px] xl:w-[390px] 2xl:w-[450px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] flex flex-col rounded-2xl relative transform-gpu h-full shadow-2xl transition-all duration-200 overflow-hidden">
+          <StylePanel onClose={() => setIsRightPanelOpen(false)} />
         </div>
       )}
       {/* Confirmation Modal */}

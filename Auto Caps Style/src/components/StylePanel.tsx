@@ -2,7 +2,7 @@ import { PromoBanner } from './PromoBanner';
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useProjectStore, StyleConfig, defaultStyle } from '@/store/useProjectStore';
-import { PaintBucket, Type, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight, Check, Trash2, Plus, Download, Upload, Square, RotateCcw, Sparkles, Film, Layout, Zap, Sliders, Layers } from 'lucide-react';
+import { PaintBucket, PanelRightClose, Type, ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight, Check, Trash2, Plus, Download, Upload, Square, RotateCcw, Sparkles, Film, Layout, Zap, Sliders, Layers } from 'lucide-react';
 
 const AccordionItem = ({ title, icon, badge, children, isOpen, onToggle }: { title: string, icon?: React.ReactNode, badge?: string, children: React.ReactNode, isOpen: boolean, onToggle: () => void }) => {
   return (
@@ -449,7 +449,7 @@ const CustomColorPicker = ({
   );
 };
 
-export const StylePanel = () => {
+export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
   const { 
     styleConfig: globalStyleConfig, 
     setStyleConfig, 
@@ -608,21 +608,22 @@ export const StylePanel = () => {
   };
 
   return (
-    <div className="bg-[#18181c]/90 rounded-2xl p-5 shadow-2xl border border-[#2b2b34] flex flex-col transform-gpu">
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#2b2b34]/80">
-        <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400">
-            <PaintBucket className="w-4 h-4" />
+    <div className="flex flex-col h-full overflow-hidden bg-[#18181c] rounded-2xl transform-gpu">
+      {/* Locked Header (DOES NOT SCROLL) */}
+      <div className="px-3.5 py-3 flex items-center justify-between flex-shrink-0 border-b border-[#2b2b34]/80 bg-[#18181c]">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400 flex-shrink-0">
+            <PaintBucket className="w-3.5 h-3.5" />
           </div>
-          <div>
-            <h3 className="text-base font-bold text-white leading-tight">Design & Animations</h3>
-            <span className="text-[10px] font-semibold text-blue-400/80 tracking-wider">Alok Video Editor</span>
+          <div className="flex flex-col min-w-0">
+            <h3 className="text-xs font-extrabold text-white uppercase tracking-wider leading-tight truncate">Design & Animations</h3>
+            <span className="text-[9px] font-semibold text-blue-400/90 tracking-wider">Alok Video Editor</span>
           </div>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-1.5 items-center flex-shrink-0">
           <button 
             onClick={handleToggleAutoCollapse}
-            className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg transition-all border ${
+            className={`text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg transition-all border whitespace-nowrap ${
               autoCollapsePanels 
                 ? 'bg-blue-600/20 border-blue-500/50 text-blue-300' 
                 : 'bg-[#212126]/80 border-[#2e2e38] text-gray-400 hover:text-gray-200'
@@ -633,13 +634,21 @@ export const StylePanel = () => {
           </button>
           <button 
             onClick={() => setShowResetModal(true)} 
-            className="text-xs px-2.5 py-1 bg-[#212126] hover:bg-[#282830] hover:text-white border border-[#2e2e38] rounded-lg text-gray-300 transition font-medium"
+            className="text-[11px] px-2 py-1 bg-[#212126] hover:bg-[#282830] hover:text-white border border-[#2e2e38] rounded-lg text-gray-300 transition font-medium"
             title="Reset Options"
           >
             Reset
           </button>
+          {onClose && (
+            <button onClick={onClose} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
+              <PanelRightClose className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Scrollable Controls Body */}
+      <div className="flex-1 p-3.5 overflow-y-auto min-h-0 space-y-3">
 
       {isEditingIndividual ? (
         <div className="bg-blue-600/20 border border-blue-500/50 text-blue-200 px-3.5 py-2 rounded-xl text-xs font-semibold mb-4 flex items-center justify-between shadow-sm">
@@ -1959,6 +1968,7 @@ export const StylePanel = () => {
           <span key={font.family} style={{ fontFamily: `"${font.family}", sans-serif` }}>preload</span>
         ))}
       </div>
+    </div>
     </div>
   );
 };
