@@ -469,7 +469,7 @@ export const Editor: React.FC = () => {
 
       {/* Left Sidebar: Captions, Render */}
       {isLeftPanelOpen && (
-        <div className="w-full lg:w-[300px] xl:w-[380px] 2xl:w-[450px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] flex flex-col rounded-2xl relative z-10 lg:h-full shadow-2xl transition-all duration-200">
+        <div className="order-2 lg:order-1 w-full lg:w-[300px] xl:w-[380px] 2xl:w-[450px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] flex flex-col rounded-2xl relative z-10 lg:h-full shadow-2xl transition-all duration-200">
           {/* Watermark and Toggle */}
           <div className="px-4 py-3 flex justify-between items-center flex-shrink-0 border-b border-[#2b2b34]/80">
             <div className="flex flex-col">
@@ -713,7 +713,7 @@ export const Editor: React.FC = () => {
       )}
 
       {/* Main Preview Area */}
-      <div className="flex-1 min-w-0 w-full h-full bg-[#18181c] flex flex-col items-center justify-center p-3 lg:p-6 border border-[#2b2b34] rounded-2xl relative shadow-2xl overflow-hidden">
+      <div className="order-1 lg:order-2 flex-none h-[45vh] sm:h-[50vh] lg:h-full lg:flex-1 min-w-0 w-full bg-[#18181c] flex flex-col items-center justify-center p-3 lg:p-6 border border-[#2b2b34] rounded-2xl relative shadow-2xl overflow-hidden">
         {!isLeftPanelOpen && (
           <button onClick={() => setIsLeftPanelOpen(true)} className="absolute top-4 left-4 z-20 text-gray-400 hover:text-white bg-[#212126] p-2 rounded-xl border border-[#2e2e38] shadow-lg transition" title="Open Captions Panel">
             <PanelLeftOpen className="w-4 h-4" />
@@ -805,7 +805,7 @@ export const Editor: React.FC = () => {
 
       {/* Right Sidebar: Design & Animations */}
       {isRightPanelOpen && (
-        <div className="w-full lg:w-[360px] xl:w-[440px] 2xl:w-[520px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] lg:overflow-y-auto flex flex-col rounded-2xl p-3 relative transform-gpu lg:h-full shadow-2xl transition-all duration-200">
+        <div className="order-3 lg:order-3 w-full lg:w-[360px] xl:w-[440px] 2xl:w-[520px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] lg:overflow-y-auto flex flex-col rounded-2xl p-3 relative transform-gpu lg:h-full shadow-2xl transition-all duration-200">
           <div className="flex justify-end absolute top-3.5 right-3.5 z-20">
             <button onClick={() => setIsRightPanelOpen(false)} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
               <PanelRightClose className="w-4 h-4" />
