@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { X, ExternalLink, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 
 interface SingleAd {
   enabled?: boolean | number | string;
   imageUrl?: string;
   videoUrl?: string;
+  localImageUrl?: string;
+  localVideoUrl?: string;
   type?: 'image' | 'video';
   link?: string;
   altText?: string;
@@ -15,20 +17,7 @@ interface SingleAd {
   fallbackSubtitle?: string;
 }
 
-interface AdConfig {
-  enabled: boolean | number | string;
-  imageUrl?: string;
-  videoUrl?: string;
-  type?: 'image' | 'video';
-  link?: string;
-  altText?: string;
-  badge?: string;
-  ads?: SingleAd[];
-}
-
-const PRIMARY_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/ad.json';
-const FALLBACK_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/master/ad.json';
-const CACHE_KEY = 'autocapstyle_cached_ads_v1';
+const CACHE_KEY = 'autocapstyle_cached_ads_v2';
 
 // Default offline ad that displays if user has never connected to internet
 const DEFAULT_OFFLINE_ADS: SingleAd[] = [
@@ -43,39 +32,12 @@ const DEFAULT_OFFLINE_ADS: SingleAd[] = [
   }
 ];
 
-const resolveDirectMediaUrl = (url?: string): string => {
-  if (!url) return '';
-  let clean = url.trim();
-
-  // If it's a relative path like "Images/ad.png" or "Videos/ad.webm" or "ad.gif"
-  if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
-    clean = clean.replace(/^\.\//, '').replace(/^\//, '');
-    clean = `https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/${clean}`;
-  } else if (clean.includes('github.com') && clean.includes('/blob/')) {
-    clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
-  } else if (clean.includes('github.com') && clean.includes('/raw/')) {
-    clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/raw/', '/');
-  }
-
-  try {
-    return encodeURI(decodeURI(clean));
-  } catch (_) {
-    return encodeURI(clean);
-  }
-};
-
 const isVideoSource = (ad: SingleAd): boolean => {
   if (ad.type === 'video') return true;
+  if (ad.localVideoUrl && ad.localVideoUrl.trim().length > 0) return true;
   if (ad.videoUrl && ad.videoUrl.trim().length > 0) return true;
-  const src = (ad.videoUrl || ad.imageUrl || '').toLowerCase();
+  const src = (ad.localVideoUrl || ad.videoUrl || ad.localImageUrl || ad.imageUrl || '').toLowerCase();
   return src.endsWith('.webm') || src.endsWith('.mp4') || src.endsWith('.mov') || src.endsWith('.m4v') || src.includes('.webm?') || src.includes('.mp4?');
-};
-
-const isItemEnabled = (val: any): boolean => {
-  if (val === undefined || val === null) return true;
-  if (val === 1 || val === '1' || val === true || val === 'true') return true;
-  if (val === 0 || val === '0' || val === false || val === 'false') return false;
-  return Boolean(val);
 };
 
 export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }> = ({ 
@@ -87,13 +49,28 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   const [isDismissed, setIsDismissed] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [mediaErrorMap, setMediaErrorMap] = useState<{ [key: number]: boolean }>({});
-  const [loadedMedia, setLoadedMedia] = useState<{ [key: number]: boolean }>({});
   const isOpeningRef = useRef(false);
 
-  useEffect(() => {
-    let isMounted = true;
+  // Background Sync Engine: Fetches fresh ads, downloads media to local disk, and purges removed ads
+  const syncAds = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ads-sync?t=' + Date.now(), { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.ads) && data.ads.length > 0) {
+          setAdList(data.ads);
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(data.ads));
+          } catch (_) {}
+        }
+      }
+    } catch (_) {
+      // Offline fallback: handled gracefully
+    }
+  }, []);
 
-    // 1. Load cached ads immediately for instant offline rendering
+  useEffect(() => {
+    // 1. Load instant cached ads from localStorage
     try {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) {
@@ -104,55 +81,23 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
       }
     } catch (_) {}
 
-    // 2. Fetch fresh ads from GitHub
-    const fetchAds = async () => {
-      try {
-        const timestamp = Date.now();
-        let res = await fetch(`${PRIMARY_AD_URL}?t=${timestamp}`, { cache: 'no-store' });
-        if (!res.ok) {
-          res = await fetch(`${FALLBACK_AD_URL}?t=${timestamp}`, { cache: 'no-store' });
-        }
-        if (res.ok) {
-          const data = await res.json();
-          if (!isMounted || !data || !isItemEnabled(data.enabled)) return;
+    // 2. Initial sync
+    syncAds();
 
-          let list: SingleAd[] = [];
-          if (Array.isArray(data.ads) && data.ads.length > 0) {
-            list = data.ads
-              .filter((ad: any) => isItemEnabled(ad.enabled) && (ad.imageUrl || ad.videoUrl))
-              .map((ad: any) => ({
-                ...ad,
-                imageUrl: ad.imageUrl ? resolveDirectMediaUrl(ad.imageUrl) : undefined,
-                videoUrl: ad.videoUrl ? resolveDirectMediaUrl(ad.videoUrl) : undefined
-              }));
-          } else if ((data.imageUrl || data.videoUrl) && isItemEnabled(data.enabled)) {
-            list = [{
-              imageUrl: data.imageUrl ? resolveDirectMediaUrl(data.imageUrl) : undefined,
-              videoUrl: data.videoUrl ? resolveDirectMediaUrl(data.videoUrl) : undefined,
-              type: data.type,
-              link: data.link,
-              altText: data.altText,
-              badge: data.badge
-            }];
-          }
-
-          if (list.length > 0 && isMounted) {
-            setAdList(list);
-            try {
-              localStorage.setItem(CACHE_KEY, JSON.stringify(list));
-            } catch (_) {}
-          }
-        }
-      } catch (err) {
-        // Offline mode: Keep existing cached ads or DEFAULT_OFFLINE_ADS
-      }
+    // 3. Listen for online event (Auto-refresh when user reconnects to Wi-Fi/Internet)
+    const handleOnline = () => {
+      syncAds();
     };
+    window.addEventListener('online', handleOnline);
 
-    fetchAds();
+    // 4. Background polling every 3 minutes to auto-detect creator changes (add/delete ads)
+    const interval = setInterval(syncAds, 180000);
+
     return () => {
-      isMounted = false;
+      window.removeEventListener('online', handleOnline);
+      clearInterval(interval);
     };
-  }, []);
+  }, [syncAds]);
 
   // Auto-rotation timer for multiple ads (changes every 6 seconds)
   useEffect(() => {
@@ -172,7 +117,11 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   const currentAd = adList[currentIndex] || adList[0];
   const hasError = mediaErrorMap[currentIndex];
   const isVideo = isVideoSource(currentAd) && !hasError;
-  const mediaUrl = isVideo ? (currentAd.videoUrl || currentAd.imageUrl || '') : (currentAd.imageUrl || currentAd.videoUrl || '');
+  
+  // Prefer local cached media file on disk; fallback to remote URL
+  const mediaUrl = isVideo 
+    ? (currentAd.localVideoUrl || currentAd.videoUrl || currentAd.localImageUrl || currentAd.imageUrl || '') 
+    : (currentAd.localImageUrl || currentAd.imageUrl || currentAd.localVideoUrl || currentAd.videoUrl || '');
 
   const handleOpenLink = async (e: React.MouseEvent, link?: string) => {
     e.preventDefault();
@@ -301,12 +250,10 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
             onLoadedMetadata={(e) => {
               e.currentTarget.muted = true;
               e.currentTarget.play().catch(() => {});
-              setLoadedMedia(prev => ({ ...prev, [currentIndex]: true }));
             }}
             onCanPlay={(e) => {
               e.currentTarget.muted = true;
               e.currentTarget.play().catch(() => {});
-              setLoadedMedia(prev => ({ ...prev, [currentIndex]: true }));
             }}
             className="w-full h-auto max-h-[140px] object-cover rounded-lg transition-opacity duration-300"
           />
@@ -318,7 +265,6 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
             onError={() => {
               setMediaErrorMap(prev => ({ ...prev, [currentIndex]: true }));
             }}
-            onLoad={() => setLoadedMedia(prev => ({ ...prev, [currentIndex]: true }))}
             className="w-full h-auto max-h-[140px] object-cover rounded-lg transition-opacity duration-300"
           />
         )}
