@@ -475,6 +475,37 @@ export const Editor: React.FC = () => {
     };
   }, []);
 
+  // Smart Auto-Collapse on Small / Decreased Screens (< 1250px)
+  const openLeftPanel = () => {
+    setIsLeftPanelOpen(true);
+    if (typeof window !== 'undefined' && window.innerWidth < 1250) {
+      setIsRightPanelOpen(false);
+    }
+  };
+
+  const openRightPanel = () => {
+    setIsRightPanelOpen(true);
+    if (typeof window !== 'undefined' && window.innerWidth < 1250) {
+      setIsLeftPanelOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== 'undefined' && window.innerWidth < 1250) {
+        setIsLeftPanelOpen(prevLeft => {
+          if (prevLeft) {
+            setIsRightPanelOpen(false);
+          }
+          return prevLeft;
+        });
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="flex flex-row h-screen overflow-hidden bg-[#141416] text-[#e5e7eb] p-3 lg:p-4 gap-3 lg:gap-4 relative font-sans">
       {/* Invisible video element to grab metadata */}
@@ -730,12 +761,12 @@ export const Editor: React.FC = () => {
       {/* Main Preview Area */}
       <div className="flex-1 min-w-0 h-full bg-[#18181c] flex flex-col items-center justify-center p-3 lg:p-6 border border-[#2b2b34] rounded-2xl relative shadow-2xl overflow-hidden">
         {!isLeftPanelOpen && (
-          <button onClick={() => setIsLeftPanelOpen(true)} className="absolute top-4 left-4 z-20 text-gray-400 hover:text-white bg-[#212126] p-2 rounded-xl border border-[#2e2e38] shadow-lg transition" title="Open Captions Panel">
+          <button onClick={openLeftPanel} className="absolute top-4 left-4 z-20 text-gray-400 hover:text-white bg-[#212126] hover:bg-[#282830] p-2 rounded-xl border border-[#2e2e38] hover:border-blue-500/50 shadow-lg transition" title="Open Captions Panel">
             <PanelLeftOpen className="w-4 h-4" />
           </button>
         )}
         {!isRightPanelOpen && (
-          <button onClick={() => setIsRightPanelOpen(true)} className="absolute top-4 right-4 z-20 text-gray-400 hover:text-white bg-[#212126] p-2 rounded-xl border border-[#2e2e38] shadow-lg transition" title="Open Design Panel">
+          <button onClick={openRightPanel} className="absolute top-4 right-4 z-20 text-gray-400 hover:text-white bg-[#212126] hover:bg-[#282830] p-2 rounded-xl border border-[#2e2e38] hover:border-blue-500/50 shadow-lg transition" title="Open Design Panel">
             <PanelRightOpen className="w-4 h-4" />
           </button>
         )}
