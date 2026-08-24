@@ -15,7 +15,7 @@ export type CaptionSegment = {
 
 export type AspectRatio = '9:16' | '16:9';
 export type CaptionPosition = 'lower-third' | 'center' | 'top';
-export type AnimationType = 'none' | 'slide-up' | 'pop' | 'fade' | 'typewriter' | 'elastic-bounce' | 'kinetic-clash' | 'chaos-converge' | '3-line-focus';
+export type AnimationType = 'none' | 'slide-up' | 'slide-left-right' | 'slide-right-left' | 'pop' | 'fade' | 'typewriter' | 'elastic-bounce' | 'kinetic-clash' | 'chaos-converge' | '3-line-focus';
 export type DisplayMode = 'line' | 'word' | 'letter' | 'karaoke' | 'karaoke-cumulative';
 export type TextAlign = 'left' | 'center' | 'right';
 export type HighlightStyle = 'none' | 'subtitle' | 'glow' | 'highlight' | 'underline' | 'gradient';

@@ -739,6 +739,28 @@ const AnimatedItem: React.FC<{
 
   if (styleConfig.animationType === 'none') {
     opacity = 1; // No fade in, no fade out
+  } else if (styleConfig.animationType === 'slide-left-right') {
+    const smoothSlideSpring = spring({
+      frame: relativeFrame,
+      fps,
+      config: { damping: 18, stiffness: 120, mass: 1 },
+      durationInFrames: entranceDurationFrames,
+    });
+    translateX = interpolate(smoothSlideSpring, [0, 1], [-120, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })
+               + interpolate(exitProgress, [0, 1], [0, 120], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    opacity = interpolate(smoothSlideSpring, [0, 0.1, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })
+            - interpolate(exitProgress, [0, 0.6, 1], [0, 0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+  } else if (styleConfig.animationType === 'slide-right-left') {
+    const smoothSlideSpring = spring({
+      frame: relativeFrame,
+      fps,
+      config: { damping: 18, stiffness: 120, mass: 1 },
+      durationInFrames: entranceDurationFrames,
+    });
+    translateX = interpolate(smoothSlideSpring, [0, 1], [120, 0], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })
+               + interpolate(exitProgress, [0, 1], [0, -120], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
+    opacity = interpolate(smoothSlideSpring, [0, 0.1, 1], [0, 1, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' })
+            - interpolate(exitProgress, [0, 0.6, 1], [0, 0, 1], { extrapolateRight: 'clamp', extrapolateLeft: 'clamp' });
   } else if (styleConfig.animationType === 'slide-up') {
     // Critically-damped spring: exactly zero overshoot, silky smooth slide.
     // damping / (2 * sqrt(mass * stiffness)) = 20 / (2*sqrt(100)) = 1.0 → no bounce.

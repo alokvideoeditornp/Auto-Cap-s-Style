@@ -1450,6 +1450,8 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
             {[
               { id: 'none', label: 'None' },
               { id: 'slide-up', label: 'Slide Up' },
+              { id: 'slide-left-right', label: 'Slide Left' },
+              { id: 'slide-right-left', label: 'Slide Right' },
               { id: 'pop', label: 'Pop' },
               { id: 'fade', label: 'Fade' },
               { id: 'typewriter', label: 'Typewriter' },
