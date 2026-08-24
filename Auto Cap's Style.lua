@@ -95,9 +95,10 @@ if not pyExec then
     local ui = fu.UIManager
     local disp = bmd.UIDispatcher(ui)
     local win = disp:AddWindow({
-        ID = "PythonReqWin",
+        ID = "AutoCapPythonSetupDlg",
         WindowTitle = "Auto Cap's Style - Setup Required",
-        Geometry = { 300, 150, 650, 420 },
+        Geometry = { 280, 140, 680, 430 },
+        MinimumSize = { 650, 400 },
         Margin = 0,
         StyleSheet = [[
             QWidget {
@@ -122,7 +123,7 @@ if not pyExec then
             QPushButton#DownloadBtn {
                 background-color: #2563eb;
                 border: 1px solid #1d4ed8;
-                min-width: 190px;
+                min-width: 200px;
             }
             QPushButton#DownloadBtn:hover {
                 background-color: #3b82f6;
@@ -134,16 +135,16 @@ if not pyExec then
         ]],
         ui:VGroup{
             ID = "RootLayout",
-            Margin = 22,
+            Margin = 24,
             Spacing = 16,
             ui:Label{
                 ID = "HeaderLabel",
-                Text = "<html><table width='100%' cellpadding='0' cellspacing='0'><tr><td valign='middle'><span style='font-size: 19px; font-weight: bold; color: #ffffff;'>Python 3.11 Required</span></td><td align='right' valign='middle' style='white-space: nowrap;'><span style='background-color: #3b1f14; color: #f97316; border: 1px solid #7c2d12; border-radius: 4px; padding: 4px 10px; font-size: 11px; font-weight: bold; white-space: nowrap;'>SETUP REQUIRED</span></td></tr><tr><td colspan='2' style='padding-top: 6px;'><div style='font-size: 13px; color: #9ca3af;'>Auto Cap's Style requires Python 3.11 to integrate with DaVinci Resolve</div></td></tr></table></html>",
+                Text = "<html><table width='100%' cellpadding='0' cellspacing='0'><tr><td><span style='font-size: 20px; font-weight: bold; color: #ffffff;'>Python 3.11 Required</span>&nbsp;&nbsp;<span style='background-color: #3b1f14; color: #f97316; border: 1px solid #7c2d12; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: bold;'>SETUP REQUIRED</span><div style='font-size: 13px; color: #9ca3af; margin-top: 6px;'>Auto Cap's Style requires Python 3.11 to integrate with DaVinci Resolve</div></td></tr></table></html>",
                 Weight = 0,
             },
             ui:Label{
                 ID = "CardLabel",
-                Text = "<html><div style='background-color: #1e1e24; border: 1px solid #2e2e38; border-radius: 8px; padding: 16px;'><table cellpadding='6' cellspacing='0' width='100%'><tr><td width='26' valign='top' style='color: #60a5fa; font-weight: bold; font-size: 14px;'>1.</td><td style='color: #e5e7eb; font-size: 13px; line-height: 1.4;'>Click <b>Download Python 3.11</b> below to open the official installer.</td></tr><tr><td width='26' valign='top' style='color: #f59e0b; font-weight: bold; font-size: 14px;'>2.</td><td style='color: #fde68a; font-size: 13px; line-height: 1.4;'><b>IMPORTANT:</b> Check <b>\"Add python.exe to PATH\"</b> during setup.</td></tr><tr><td width='26' valign='top' style='color: #60a5fa; font-weight: bold; font-size: 14px;'>3.</td><td style='color: #e5e7eb; font-size: 13px; line-height: 1.4;'>After installation finishes, re-run this plugin from <b>Workspace &gt; Scripts</b>.</td></tr></table></div></html>",
+                Text = "<html><div style='background-color: #1e1e24; border: 1px solid #2e2e38; border-radius: 8px; padding: 16px;'><table cellpadding='8' cellspacing='0' width='100%'><tr><td width='26' valign='top' style='color: #60a5fa; font-weight: bold; font-size: 14px;'>1.</td><td style='color: #e5e7eb; font-size: 13px; line-height: 1.4;'>Click <b>Download Python 3.11</b> below to open the official installer.</td></tr><tr><td width='26' valign='top' style='color: #f59e0b; font-weight: bold; font-size: 14px;'>2.</td><td style='color: #fde68a; font-size: 13px; line-height: 1.4;'><b>IMPORTANT:</b> Check <b>\"Add python.exe to PATH\"</b> during setup.</td></tr><tr><td width='26' valign='top' style='color: #60a5fa; font-weight: bold; font-size: 14px;'>3.</td><td style='color: #e5e7eb; font-size: 13px; line-height: 1.4;'>After installation finishes, re-run this plugin from <b>Workspace &gt; Scripts</b>.</td></tr></table></div></html>",
                 Weight = 0,
             },
             ui:VGap(10),
@@ -165,7 +166,7 @@ if not pyExec then
         }
     })
 
-    win.On.PythonReqWin.Close = function(ev) disp:ExitLoop() end
+    win.On.AutoCapPythonSetupDlg.Close = function(ev) disp:ExitLoop() end
     win.On.CloseBtn.Clicked = function(ev) disp:ExitLoop() end
     win.On.DownloadBtn.Clicked = function(ev)
         local dlUrl = isWin and 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe'
