@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { X, ExternalLink, ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { X, ExternalLink, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 
 interface SingleAd {
   enabled?: boolean | number | string;
@@ -11,6 +11,8 @@ interface SingleAd {
   link?: string;
   altText?: string;
   badge?: string;
+  fallbackTitle?: string;
+  fallbackSubtitle?: string;
 }
 
 interface AdConfig {
@@ -26,6 +28,20 @@ interface AdConfig {
 
 const PRIMARY_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/ad.json';
 const FALLBACK_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/master/ad.json';
+const CACHE_KEY = 'autocapstyle_cached_ads_v1';
+
+// Default offline ad that displays if user has never connected to internet
+const DEFAULT_OFFLINE_ADS: SingleAd[] = [
+  {
+    enabled: 1,
+    badge: "FEATURED",
+    altText: "Auto File Organizer Pro",
+    imageUrl: "https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/Images/ad_Auto%20File%20Organizer%20Pro.png",
+    link: "https://payhip.com/b/HbZKp",
+    fallbackTitle: "Auto File Organizer Pro",
+    fallbackSubtitle: "Automate and organize your DaVinci Resolve media in 1-Click"
+  }
+];
 
 const resolveDirectMediaUrl = (url?: string): string => {
   if (!url) return '';
@@ -66,16 +82,29 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   className = '',
   dismissible = false
 }) => {
-  const [adList, setAdList] = useState<SingleAd[]>([]);
+  const [adList, setAdList] = useState<SingleAd[]>(DEFAULT_OFFLINE_ADS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [videoErrorMap, setVideoErrorMap] = useState<{ [key: number]: boolean }>({});
+  const [mediaErrorMap, setMediaErrorMap] = useState<{ [key: number]: boolean }>({});
   const [loadedMedia, setLoadedMedia] = useState<{ [key: number]: boolean }>({});
   const isOpeningRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
+
+    // 1. Load cached ads immediately for instant offline rendering
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAdList(parsed);
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fetch fresh ads from GitHub
     const fetchAds = async () => {
       try {
         const timestamp = Date.now();
@@ -107,12 +136,15 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
             }];
           }
 
-          if (list.length > 0) {
+          if (list.length > 0 && isMounted) {
             setAdList(list);
+            try {
+              localStorage.setItem(CACHE_KEY, JSON.stringify(list));
+            } catch (_) {}
           }
         }
       } catch (err) {
-        // Silently fail if offline
+        // Offline mode: Keep existing cached ads or DEFAULT_OFFLINE_ADS
       }
     };
 
@@ -138,7 +170,8 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   }
 
   const currentAd = adList[currentIndex] || adList[0];
-  const isVideo = isVideoSource(currentAd) && !videoErrorMap[currentIndex];
+  const hasError = mediaErrorMap[currentIndex];
+  const isVideo = isVideoSource(currentAd) && !hasError;
   const mediaUrl = isVideo ? (currentAd.videoUrl || currentAd.imageUrl || '') : (currentAd.imageUrl || currentAd.videoUrl || '');
 
   const handleOpenLink = async (e: React.MouseEvent, link?: string) => {
@@ -237,12 +270,23 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
         </div>
       </div>
 
-      {/* Clickable Media Banner (WebM Video, GIF, WebP, or Image) */}
+      {/* Clickable Media Banner (WebM Video, Image, or Offline Fallback Card) */}
       <div 
         onClick={(e) => handleOpenLink(e, currentAd.link)}
         className="relative block cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 hover:scale-[1.01] bg-[#121216]"
       >
-        {isVideo ? (
+        {hasError ? (
+          /* Offline styled visual card if image file is unreachable */
+          <div className="w-full min-h-[90px] p-3 rounded-lg bg-gradient-to-r from-blue-950/70 via-[#181822] to-purple-950/70 border border-blue-500/20 flex flex-col justify-center gap-1">
+            <div className="flex items-center gap-1.5 text-blue-400 text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+              <span>{currentAd.fallbackTitle || currentAd.altText || "Auto File Organizer Pro"}</span>
+            </div>
+            <p className="text-[11px] text-gray-400 leading-snug line-clamp-2">
+              {currentAd.fallbackSubtitle || "Automate and organize your DaVinci Resolve media in 1-Click."}
+            </p>
+          </div>
+        ) : isVideo ? (
           <video
             key={mediaUrl}
             src={mediaUrl}
@@ -252,8 +296,7 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
             playsInline
             controls={false}
             onError={() => {
-              // If video codec is not supported by Qt, fallback gracefully
-              setVideoErrorMap(prev => ({ ...prev, [currentIndex]: true }));
+              setMediaErrorMap(prev => ({ ...prev, [currentIndex]: true }));
             }}
             onLoadedMetadata={(e) => {
               e.currentTarget.muted = true;
@@ -272,6 +315,9 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
             key={mediaUrl}
             src={mediaUrl}
             alt={currentAd.altText || 'Sponsored Promotion'}
+            onError={() => {
+              setMediaErrorMap(prev => ({ ...prev, [currentIndex]: true }));
+            }}
             onLoad={() => setLoadedMedia(prev => ({ ...prev, [currentIndex]: true }))}
             className="w-full h-auto max-h-[140px] object-cover rounded-lg transition-opacity duration-300"
           />
