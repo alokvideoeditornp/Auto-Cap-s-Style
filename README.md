@@ -1,4 +1,4 @@
-# 🎬 Auto Cap's Style — Alok Video Editor (v1.0.0)
+# 🎬 Auto Cap's Style — Alok Video Editor
 
 > **AI-Powered Animated Captions & Subtitle Studio for DaVinci Resolve**  
 > *Seamlessly create, style, animate, and burn-in viral social media captions (Reels, TikTok, Shorts, YouTube) with 1-click timeline integration.*
@@ -150,6 +150,5 @@
 ## 📄 License & Support
 
 - **Created by**: [Alok Video Editor](https://alokvideoeditor.com)
-- **Version**: `1.0.0`
 - **Support & Updates**: Contact via Payhip or GitHub Issues.
 - *Protected Proprietary Software — All Rights Reserved.*
