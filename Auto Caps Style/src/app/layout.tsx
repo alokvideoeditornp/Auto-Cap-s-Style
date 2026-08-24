@@ -43,7 +43,8 @@ export default function RootLayout({
               gtag('js', new Date());
               gtag('config', '${GA_MEASUREMENT_ID}', {
                 page_path: window.location.pathname,
-                send_page_view: true
+                send_page_view: true,
+                app_version: '1.0.0'
               });
             `,
           }}

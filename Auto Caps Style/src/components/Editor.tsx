@@ -544,9 +544,14 @@ export const Editor: React.FC = () => {
           {/* Watermark and Toggle */}
           <div className="px-4 py-3 flex justify-between items-center flex-shrink-0 border-b border-[#2b2b34]/80">
             <div className="flex flex-col">
-              <h1 className="text-white text-xs font-extrabold tracking-[0.18em] font-sans select-none uppercase flex items-center gap-1.5">
-                <span className="text-blue-500">Auto Cap&apos;s</span> Style
-              </h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-white text-xs font-extrabold tracking-[0.18em] font-sans select-none uppercase flex items-center gap-1.5">
+                  <span className="text-blue-500">Auto Cap&apos;s</span> Style
+                </h1>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 tracking-normal">
+                  v1.0.0
+                </span>
+              </div>
               <span className="text-[10px] font-semibold text-blue-400/90 tracking-wider">
                 Alok Video Editor
               </span>
