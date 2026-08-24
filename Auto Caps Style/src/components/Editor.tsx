@@ -29,6 +29,7 @@ export const Editor: React.FC = () => {
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isMemoryBoxOpen, setIsMemoryBoxOpen] = useState(false);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'captions' | 'design'>('captions');
 
   // Stable ref for captions — used inside callbacks to avoid stale closures
   // without putting `captions` in dependency arrays (which would cause re-render loops).
@@ -463,13 +464,13 @@ export const Editor: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen lg:overflow-hidden bg-[#141416] text-[#e5e7eb] p-3 lg:p-4 gap-3 lg:gap-4 relative font-sans">
+    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-[#141416] text-[#e5e7eb] p-2.5 lg:p-4 gap-2.5 lg:gap-4 relative font-sans">
       {/* Invisible video element to grab metadata */}
       <video ref={videoRef} className="hidden" />
 
       {/* Left Sidebar: Captions, Render */}
       {isLeftPanelOpen && (
-        <div className="order-2 lg:order-1 w-full lg:w-[300px] xl:w-[380px] 2xl:w-[450px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] flex flex-col rounded-2xl relative z-10 lg:h-full shadow-2xl transition-all duration-200">
+        <div className={`order-3 lg:order-1 w-full lg:w-[300px] xl:w-[380px] 2xl:w-[450px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] rounded-2xl relative z-10 h-full lg:h-full shadow-2xl transition-all duration-200 overflow-hidden ${mobileActiveTab === "captions" ? "flex flex-col flex-1 min-h-0" : "hidden lg:flex lg:flex-col"}`}>
           {/* Watermark and Toggle */}
           <div className="px-4 py-3 flex justify-between items-center flex-shrink-0 border-b border-[#2b2b34]/80">
             <div className="flex flex-col">
@@ -803,9 +804,36 @@ export const Editor: React.FC = () => {
         </div>
       </div>
 
+      
+      {/* Mobile / Tablet Tab Switcher Bar */}
+      <div className="order-2 flex lg:hidden w-full items-center p-1 bg-[#18181c] border border-[#2b2b34] rounded-xl gap-1 flex-shrink-0 shadow-lg">
+        <button
+          onClick={() => setMobileActiveTab('captions')}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
+            mobileActiveTab === 'captions'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+              : 'text-gray-400 hover:text-white hover:bg-[#22222a]'
+          }`}
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          Captions
+        </button>
+        <button
+          onClick={() => setMobileActiveTab('design')}
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
+            mobileActiveTab === 'design'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+              : 'text-gray-400 hover:text-white hover:bg-[#22222a]'
+          }`}
+        >
+          <Wand2 className="w-3.5 h-3.5" />
+          Design & Animations
+        </button>
+      </div>
+
       {/* Right Sidebar: Design & Animations */}
       {isRightPanelOpen && (
-        <div className="order-3 lg:order-3 w-full lg:w-[360px] xl:w-[440px] 2xl:w-[520px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] lg:overflow-y-auto flex flex-col rounded-2xl p-3 relative transform-gpu lg:h-full shadow-2xl transition-all duration-200">
+        <div className={`order-3 lg:order-3 w-full lg:w-[360px] xl:w-[440px] 2xl:w-[520px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] overflow-y-auto rounded-2xl p-3 relative transform-gpu h-full lg:h-full shadow-2xl transition-all duration-200 ${mobileActiveTab === "design" ? "flex flex-col flex-1 min-h-0" : "hidden lg:flex lg:flex-col"}`}>
           <div className="flex justify-end absolute top-3.5 right-3.5 z-20">
             <button onClick={() => setIsRightPanelOpen(false)} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
               <PanelRightClose className="w-4 h-4" />
