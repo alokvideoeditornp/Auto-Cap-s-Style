@@ -693,35 +693,36 @@ export const Editor: React.FC = () => {
             )}
           </div>
 
-          {/* Action Buttons & Big Promo Banner (Shown when user scrolls) */}
-          <div className="mt-4 pt-3 border-t border-[#2b2b34] space-y-2">
-            <button 
-              onClick={handleRender}
-              disabled={captions.length === 0 || isRendering}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-wider"
-            >
-              {isRendering ? `Rendering... ${renderProgress}%` : 'Render Final Video'}
-            </button>
-            
-            <button 
-              onClick={handleOpenFolder}
-              className="w-full bg-[#282832] hover:bg-[#343440] text-gray-200 border border-[#383844] font-semibold py-2.5 px-4 rounded-xl transition text-xs"
-            >
-              Open Renders Folder
-            </button>
+        </div>
 
-            {downloadUrl && (
-              <a
-                href={downloadUrl}
-                download="Auto-Caps-Style-render.mov"
-                className="bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 transition text-xs"
-              >
-                Download .MOV (ProRes)
-              </a>
-            )}
+        {/* Pinned Bottom Action Bar & Promo Banner (DOES NOT SCROLL) */}
+        <div className="p-3 border-t border-[#2b2b34] space-y-2 flex-shrink-0 bg-[#18181c]">
+          <button 
+            onClick={handleRender}
+            disabled={captions.length === 0 || isRendering}
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-blue-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-wider"
+          >
+            {isRendering ? `Rendering... ${renderProgress}%` : 'Render Final Video'}
+          </button>
+          
+          <button 
+            onClick={handleOpenFolder}
+            className="w-full bg-[#282832] hover:bg-[#343440] text-gray-200 border border-[#383844] font-semibold py-2 px-4 rounded-xl transition text-xs"
+          >
+            Open Renders Folder
+          </button>
 
-            <PromoBanner className="mt-3" dismissible={false} />
-          </div>
+          {downloadUrl && (
+            <a
+              href={downloadUrl}
+              download="Auto-Caps-Style-render.mov"
+              className="bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 transition text-xs"
+            >
+              Download .MOV (ProRes)
+            </a>
+          )}
+
+          <PromoBanner className="mt-2" dismissible={false} />
         </div>
         </div>
       )}
