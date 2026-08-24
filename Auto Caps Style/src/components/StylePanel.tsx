@@ -609,25 +609,33 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
 
   return (
     <div className="flex flex-col h-full min-h-0 w-full bg-[#18181c] overflow-hidden">
-      {/* Locked Header (DOES NOT SCROLL) */}
-      <div className="px-4 py-3 flex items-center justify-between flex-shrink-0 border-b border-[#2b2b34]/80 bg-[#18181c]">
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col min-w-0">
-            <h3 className="text-white text-xs font-extrabold tracking-[0.18em] font-sans select-none uppercase flex items-center gap-1.5 truncate">
-              <span className="text-blue-500">Design &</span> Animations
-            </h3>
-            <span className="text-[10px] font-semibold text-blue-400/90 tracking-wider">
-              Alok Video Editor
-            </span>
-          </div>
+      {/* Locked Header (1:1 identical to Captions panel) */}
+      <div className="px-4 py-3 flex justify-between items-center flex-shrink-0 border-b border-[#2b2b34]/80 bg-[#18181c]">
+        <div className="flex flex-col">
+          <h1 className="text-white text-xs font-extrabold tracking-[0.18em] font-sans select-none uppercase flex items-center gap-1.5">
+            <span className="text-blue-500">Design &</span> Animations
+          </h1>
+          <span className="text-[10px] font-semibold text-blue-400/90 tracking-wider">
+            Alok Video Editor
+          </span>
         </div>
-        <div className="flex gap-1.5 items-center flex-shrink-0">
+        {onClose && (
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
+            <PanelRightClose className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Scrollable Controls Body */}
+      <div className="flex-1 p-3.5 overflow-y-auto min-h-0 space-y-3">
+        {/* Quick Toolbar: Auto Collapse & Reset */}
+        <div className="flex items-center justify-between gap-2">
           <button 
             onClick={handleToggleAutoCollapse}
-            className={`text-[9px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg transition-all border whitespace-nowrap ${
+            className={`flex-1 text-[10px] font-bold uppercase tracking-wider py-1.5 px-2 rounded-xl transition-all border text-center ${
               autoCollapsePanels 
                 ? 'bg-blue-600/20 border-blue-500/50 text-blue-300' 
-                : 'bg-[#212126]/80 border-[#2e2e38] text-gray-400 hover:text-gray-200'
+                : 'bg-[#212126] border-[#2e2e38] text-gray-400 hover:text-gray-200'
             }`}
             title="When ON, opening a panel automatically closes others"
           >
@@ -635,21 +643,12 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
           </button>
           <button 
             onClick={() => setShowResetModal(true)} 
-            className="text-[11px] px-2.5 py-1 bg-[#212126] hover:bg-[#282830] hover:text-white border border-[#2e2e38] rounded-lg text-gray-300 transition font-medium"
+            className="text-xs px-3 py-1.5 bg-[#212126] hover:bg-[#282830] hover:text-white border border-[#2e2e38] rounded-xl text-gray-300 transition font-medium"
             title="Reset Options"
           >
             Reset
           </button>
-          {onClose && (
-            <button onClick={onClose} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
-              <PanelRightClose className="w-4 h-4" />
-            </button>
-          )}
         </div>
-      </div>
-
-      {/* Scrollable Controls Body */}
-      <div className="flex-1 p-3.5 overflow-y-auto min-h-0 space-y-3">
 
       {isEditingIndividual ? (
         <div className="bg-blue-600/20 border border-blue-500/50 text-blue-200 px-3.5 py-2 rounded-xl text-xs font-semibold mb-4 flex items-center justify-between shadow-sm">
