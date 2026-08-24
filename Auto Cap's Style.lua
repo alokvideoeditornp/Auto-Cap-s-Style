@@ -96,60 +96,61 @@ if not pyExec then
     local disp = bmd.UIDispatcher(ui)
     local win = disp:AddWindow({
         ID = "PythonReqWin",
-        WindowTitle = "Auto Cap's Style v1.0.0 - Setup Required",
-        Geometry = { 400, 250, 480, 260 },
+        WindowTitle = "Auto Cap's Style - Setup Required",
+        Geometry = { 350, 180, 580, 390 },
         Margin = 0,
         StyleSheet = [[
             QWidget {
-                background-color: #18181c;
+                background-color: #141417;
                 color: #e5e7eb;
                 font-family: -apple-system, 'Segoe UI', Roboto, sans-serif;
             }
             QPushButton {
-                background-color: #2b2b34;
+                background-color: #26262f;
                 color: #ffffff;
-                border: 1px solid #3e3e4a;
+                border: 1px solid #3b3b48;
                 border-radius: 6px;
-                padding: 6px 14px;
+                padding: 8px 18px;
                 font-weight: bold;
-                font-size: 12px;
-                min-height: 28px;
+                font-size: 13px;
+                min-height: 36px;
             }
             QPushButton:hover {
-                background-color: #383844;
-                border-color: #555566;
+                background-color: #333340;
+                border-color: #525266;
             }
             QPushButton#DownloadBtn {
                 background-color: #2563eb;
                 border: 1px solid #1d4ed8;
-                min-width: 140px;
+                min-width: 190px;
             }
             QPushButton#DownloadBtn:hover {
                 background-color: #3b82f6;
                 border-color: #2563eb;
             }
             QPushButton#CloseBtn {
-                min-width: 100px;
+                min-width: 110px;
             }
         ]],
         ui:VGroup{
             ID = "RootLayout",
-            Margin = 24,
-            Spacing = 16,
+            Margin = 20,
+            Spacing = 14,
             ui:Label{
                 ID = "HeaderLabel",
-                Text = "<html><table width='100%' cellpadding='0' cellspacing='0'><tr><td><div style='font-size: 18px; font-weight: bold; color: #ffffff;'>Python 3.11 Required</div><div style='font-size: 13px; color: #9ca3af; margin-top: 4px;'>Auto Cap's Style requires Python 3.11 to integrate with DaVinci Resolve</div></td><td align='right' valign='top'><span style='background-color: #3b1f14; color: #f97316; border: 1px solid #7c2d12; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: bold;'>SETUP REQUIRED</span></td></tr></table></html>",
+                Text = "<html><table width='100%' cellpadding='0' cellspacing='0'><tr><td><div style='font-size: 20px; font-weight: bold; color: #ffffff;'>Python 3.11 Required</div><div style='font-size: 13px; color: #9ca3af; margin-top: 4px;'>Auto Cap's Style requires Python 3.11 to integrate with DaVinci Resolve</div></td><td align='right' valign='top'><span style='background-color: #3b1f14; color: #f97316; border: 1px solid #7c2d12; border-radius: 4px; padding: 4px 8px; font-size: 10px; font-weight: bold;'>SETUP REQUIRED</span></td></tr></table></html>",
                 Weight = 0,
             },
             ui:Label{
                 ID = "CardLabel",
-                Text = "<html><div style='background-color: #222228; border: 1px solid #2e2e38; border-radius: 6px; padding: 16px;'><table cellpadding='6' cellspacing='0' width='100%'><tr><td width='26' valign='top' style='color: #60a5fa; font-weight: bold; font-size: 14px;'>1.</td><td style='color: #e5e7eb; font-size: 13px; line-height: 1.4;'>Click <b>Download Python 3.11</b> below to open the official Python installer.</td></tr><tr><td width='26' valign='top' style='color: #f59e0b; font-weight: bold; font-size: 14px;'>2.</td><td style='color: #fde68a; font-size: 13px; line-height: 1.4;'><b>IMPORTANT:</b> Complete installation with PATH enabled.</td></tr><tr><td width='26' valign='top' style='color: #60a5fa; font-weight: bold; font-size: 14px;'>3.</td><td style='color: #e5e7eb; font-size: 13px; line-height: 1.4;'>Once installation finishes, re-run this plugin from <b>Workspace &gt; Scripts</b>.</td></tr></table></div></html>",
+                Text = "<html><div style='background-color: #1e1e24; border: 1px solid #2e2e38; border-radius: 8px; padding: 14px;'><table cellpadding='6' cellspacing='0' width='100%'><tr><td width='24' valign='top' style='color: #60a5fa; font-weight: bold; font-size: 14px;'>1.</td><td style='color: #e5e7eb; font-size: 13px; line-height: 1.4;'>Click <b>Download Python 3.11</b> below to open the official installer.</td></tr><tr><td width='24' valign='top' style='color: #f59e0b; font-weight: bold; font-size: 14px;'>2.</td><td style='color: #fde68a; font-size: 13px; line-height: 1.4;'><b>IMPORTANT:</b> Check <b>\"Add python.exe to PATH\"</b> during setup.</td></tr><tr><td width='24' valign='top' style='color: #60a5fa; font-weight: bold; font-size: 14px;'>3.</td><td style='color: #e5e7eb; font-size: 13px; line-height: 1.4;'>After installation finishes, re-run this plugin from <b>Workspace &gt; Scripts</b>.</td></tr></table></div></html>",
                 Weight = 0,
             },
-            ui:VGap(15),
+            ui:VGap(10),
             ui:HGroup{
                 ID = "FooterButtons",
                 Spacing = 12,
+                Weight = 0,
                 ui:HGap(1),
                 ui:Button{
                     ID = "CloseBtn",
@@ -160,6 +161,7 @@ if not pyExec then
                     Text = "Download Python 3.11",
                 },
             },
+            ui:VGap(5),
         }
     })
 
