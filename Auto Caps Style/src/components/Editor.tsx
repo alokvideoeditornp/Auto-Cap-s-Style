@@ -820,7 +820,7 @@ export const Editor: React.FC = () => {
 
       {/* Right Sidebar: Design & Animations */}
       {isRightPanelOpen && (
-        <div className="w-[320px] lg:w-[340px] xl:w-[390px] 2xl:w-[450px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] flex flex-col rounded-2xl relative transform-gpu h-full shadow-2xl transition-all duration-200 overflow-hidden">
+        <div className="w-[340px] lg:w-[360px] xl:w-[420px] 2xl:w-[480px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] flex flex-col rounded-2xl relative transform-gpu h-full shadow-2xl transition-all duration-200 overflow-hidden">
           <StylePanel onClose={() => setIsRightPanelOpen(false)} />
         </div>
       )}

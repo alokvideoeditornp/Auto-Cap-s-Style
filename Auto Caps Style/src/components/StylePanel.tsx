@@ -608,16 +608,17 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-[#18181c] rounded-2xl transform-gpu">
+    <div className="flex flex-col h-full min-h-0 w-full bg-[#18181c] overflow-hidden">
       {/* Locked Header (DOES NOT SCROLL) */}
-      <div className="px-3.5 py-3 flex items-center justify-between flex-shrink-0 border-b border-[#2b2b34]/80 bg-[#18181c]">
+      <div className="px-4 py-3 flex items-center justify-between flex-shrink-0 border-b border-[#2b2b34]/80 bg-[#18181c]">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400 flex-shrink-0">
-            <PaintBucket className="w-3.5 h-3.5" />
-          </div>
           <div className="flex flex-col min-w-0">
-            <h3 className="text-xs font-extrabold text-white uppercase tracking-wider leading-tight truncate">Design & Animations</h3>
-            <span className="text-[9px] font-semibold text-blue-400/90 tracking-wider">Alok Video Editor</span>
+            <h3 className="text-white text-xs font-extrabold tracking-[0.18em] font-sans select-none uppercase flex items-center gap-1.5 truncate">
+              <span className="text-blue-500">Design &</span> Animations
+            </h3>
+            <span className="text-[10px] font-semibold text-blue-400/90 tracking-wider">
+              Alok Video Editor
+            </span>
           </div>
         </div>
         <div className="flex gap-1.5 items-center flex-shrink-0">
@@ -634,7 +635,7 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
           </button>
           <button 
             onClick={() => setShowResetModal(true)} 
-            className="text-[11px] px-2 py-1 bg-[#212126] hover:bg-[#282830] hover:text-white border border-[#2e2e38] rounded-lg text-gray-300 transition font-medium"
+            className="text-[11px] px-2.5 py-1 bg-[#212126] hover:bg-[#282830] hover:text-white border border-[#2e2e38] rounded-lg text-gray-300 transition font-medium"
             title="Reset Options"
           >
             Reset
