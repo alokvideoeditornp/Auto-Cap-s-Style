@@ -5,7 +5,9 @@ import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SingleAd {
   enabled?: boolean | number | string;
-  imageUrl: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  type?: 'image' | 'video';
   link?: string;
   altText?: string;
   badge?: string;
@@ -14,6 +16,8 @@ interface SingleAd {
 interface AdConfig {
   enabled: boolean | number | string;
   imageUrl?: string;
+  videoUrl?: string;
+  type?: 'image' | 'video';
   link?: string;
   altText?: string;
   badge?: string;
@@ -23,11 +27,11 @@ interface AdConfig {
 const PRIMARY_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/ad.json';
 const FALLBACK_AD_URL = 'https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/master/ad.json';
 
-const resolveDirectImageUrl = (url?: string): string => {
+const resolveDirectMediaUrl = (url?: string): string => {
   if (!url) return '';
   let clean = url.trim();
 
-  // If it's a relative path like "images/ad1.png" or "banner.png"
+  // If it's a relative path like "images/ad1.png" or "videos/ad.mp4" or "ad.mp4"
   if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
     clean = clean.replace(/^\.\//, '').replace(/^\//, '');
     return `https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/${clean}`;
@@ -40,6 +44,13 @@ const resolveDirectImageUrl = (url?: string): string => {
     clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/raw/', '/');
   }
   return clean;
+};
+
+const isVideoSource = (ad: SingleAd): boolean => {
+  if (ad.type === 'video') return true;
+  if (ad.videoUrl) return true;
+  const src = (ad.videoUrl || ad.imageUrl || '').toLowerCase();
+  return src.endsWith('.mp4') || src.endsWith('.webm') || src.endsWith('.mov') || src.endsWith('.m4v') || src.includes('.mp4?') || src.includes('.webm?');
 };
 
 const isItemEnabled = (val: any): boolean => {
@@ -57,8 +68,9 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [loadedImages, setLoadedImages] = useState<{ [key: number]: boolean }>({});
+  const [loadedMedia, setLoadedMedia] = useState<{ [key: number]: boolean }>({});
   const isOpeningRef = useRef(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -76,14 +88,17 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
           let list: SingleAd[] = [];
           if (Array.isArray(data.ads) && data.ads.length > 0) {
             list = data.ads
-              .filter((ad: any) => isItemEnabled(ad.enabled) && !!ad.imageUrl)
+              .filter((ad: any) => isItemEnabled(ad.enabled) && (ad.imageUrl || ad.videoUrl))
               .map((ad: any) => ({
                 ...ad,
-                imageUrl: resolveDirectImageUrl(ad.imageUrl)
+                imageUrl: resolveDirectMediaUrl(ad.imageUrl),
+                videoUrl: resolveDirectMediaUrl(ad.videoUrl)
               }));
-          } else if (data.imageUrl && isItemEnabled(data.enabled)) {
+          } else if ((data.imageUrl || data.videoUrl) && isItemEnabled(data.enabled)) {
             list = [{
-              imageUrl: resolveDirectImageUrl(data.imageUrl),
+              imageUrl: resolveDirectMediaUrl(data.imageUrl),
+              videoUrl: resolveDirectMediaUrl(data.videoUrl),
+              type: data.type,
               link: data.link,
               altText: data.altText,
               badge: data.badge
@@ -121,6 +136,8 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   }
 
   const currentAd = adList[currentIndex] || adList[0];
+  const isVideo = isVideoSource(currentAd);
+  const mediaUrl = isVideo ? (currentAd.videoUrl || currentAd.imageUrl || '') : (currentAd.imageUrl || currentAd.videoUrl || '');
 
   const handleOpenLink = async (e: React.MouseEvent, link?: string) => {
     e.preventDefault();
@@ -218,18 +235,33 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
         </div>
       </div>
 
-      {/* Clickable Image Banner */}
+      {/* Clickable Media Banner (Image or Video) */}
       <div 
         onClick={(e) => handleOpenLink(e, currentAd.link)}
         className="relative block cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 hover:scale-[1.01]"
       >
-        <img
-          key={currentAd.imageUrl}
-          src={currentAd.imageUrl}
-          alt={currentAd.altText || 'Sponsored Promotion'}
-          onLoad={() => setLoadedImages(prev => ({ ...prev, [currentIndex]: true }))}
-          className={`w-full h-auto object-cover rounded-lg transition-all duration-300 ${loadedImages[currentIndex] ? 'opacity-100' : 'opacity-0 h-20 bg-[#21212a] animate-pulse'}`}
-        />
+        {isVideo ? (
+          <video
+            key={mediaUrl}
+            ref={videoRef}
+            src={mediaUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            onLoadedData={() => setLoadedMedia(prev => ({ ...prev, [currentIndex]: true }))}
+            className={`w-full h-auto object-cover rounded-lg transition-all duration-300 ${loadedMedia[currentIndex] ? 'opacity-100' : 'opacity-0 h-20 bg-[#21212a] animate-pulse'}`}
+          />
+        ) : (
+          <img
+            key={mediaUrl}
+            src={mediaUrl}
+            alt={currentAd.altText || 'Sponsored Promotion'}
+            onLoad={() => setLoadedMedia(prev => ({ ...prev, [currentIndex]: true }))}
+            className={`w-full h-auto object-cover rounded-lg transition-all duration-300 ${loadedMedia[currentIndex] ? 'opacity-100' : 'opacity-0 h-20 bg-[#21212a] animate-pulse'}`}
+          />
+        )}
         
         {/* Hover overlay hint */}
         {currentAd.link && (
