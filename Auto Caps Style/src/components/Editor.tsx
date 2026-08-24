@@ -406,6 +406,7 @@ export const Editor: React.FC = () => {
   };
 
   const handleRender = async () => {
+    if (typeof window !== 'undefined' && (window as any).gtag) { (window as any).gtag('event', 'render_start', { format: styleConfig.aspectRatio }); }
     if (captions.length === 0) return;
     setIsRendering(true);
     setRenderProgress(0);
