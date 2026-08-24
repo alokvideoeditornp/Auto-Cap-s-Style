@@ -1,5 +1,4 @@
 import { CaptionSegment } from '@/store/useProjectStore';
-// Removed srt-parser-2 dependency
 
 export const parseSrt = (srtContent: string): CaptionSegment[] => {
   // Normalize line endings and split by double blank lines
@@ -70,6 +69,16 @@ export const parseSrt = (srtContent: string): CaptionSegment[] => {
       }
     }
   }
+
+  // Auto-normalize DaVinci Resolve broadcast 01:00:00:00 (1 hour) timeline timecodes to 00:00:00
+  if (segments.length > 0 && segments[0].startTime >= 3500000) {
+    const hourOffset = Math.floor(segments[0].startTime / 3600000) * 3600000;
+    segments.forEach(seg => {
+      seg.startTime = Math.max(0, seg.startTime - hourOffset);
+      seg.endTime = Math.max(seg.startTime + 100, seg.endTime - hourOffset);
+    });
+  }
+
   if (segments.length > 0 && segments[0].startTime < 333) {
     segments[0].startTime = 333;
     if (segments[0].endTime <= 333) {
