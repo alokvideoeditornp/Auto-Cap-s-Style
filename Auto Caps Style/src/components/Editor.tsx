@@ -333,7 +333,20 @@ export const Editor: React.FC = () => {
               setStyleConfig(json.data.styleConfig);
             }
             if (Array.isArray(json.data.captions) && json.data.captions.length > 0) {
-              setCaptions(json.data.captions);
+              let loadedCaps = json.data.captions;
+              if (loadedCaps.length > 0 && (loadedCaps[0].startTime >= 3500000 || loadedCaps[0].startTime >= 3600000)) {
+                const offset = Math.floor(loadedCaps[0].startTime / 3600000) * 3600000;
+                loadedCaps = loadedCaps.map((c: any) => {
+                  const s = Math.max(0, c.startTime - offset);
+                  const e = Math.max(s + 100, c.endTime - offset);
+                  return { ...c, startTime: s, endTime: e };
+                });
+                if (loadedCaps[0].startTime < 333) {
+                  loadedCaps[0].startTime = 333;
+                  if (loadedCaps[0].endTime <= 333) loadedCaps[0].endTime = 1333;
+                }
+              }
+              setCaptions(loadedCaps);
             }
             isInitialLoadDone.current = true;
             return;
