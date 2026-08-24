@@ -500,7 +500,7 @@ export const Editor: React.FC = () => {
           </div>
 
         {/* Caption List */}
-        <div className="flex-1 p-3.5 overflow-y-auto">
+        <div className="flex-1 p-2.5 lg:p-3.5 overflow-y-auto min-h-0">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-sm font-bold text-white tracking-wide">Captions</h2>
             <div className="flex gap-1.5 items-center">
@@ -695,7 +695,7 @@ export const Editor: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-3.5 border-t border-[#2b2b34] space-y-2">
+        <div className="p-2.5 lg:p-3.5 border-t border-[#2b2b34] space-y-1.5 lg:space-y-2 flex-shrink-0">
           <button 
             onClick={handleRender}
             disabled={captions.length === 0 || isRendering}
@@ -711,7 +711,7 @@ export const Editor: React.FC = () => {
             Open Renders Folder
           </button>
 
-          <PromoBanner className="mt-2" dismissible={false} />
+          <PromoBanner className="mt-2 hidden lg:block" dismissible={false} />
 
           {downloadUrl && (
             <a
@@ -727,7 +727,7 @@ export const Editor: React.FC = () => {
       )}
 
       {/* Main Preview Area */}
-      <div className="order-1 lg:order-2 flex-none h-[45vh] sm:h-[50vh] lg:h-full lg:flex-1 min-w-0 w-full bg-[#18181c] flex flex-col items-center justify-center p-3 lg:p-6 border border-[#2b2b34] rounded-2xl relative shadow-2xl overflow-hidden">
+      <div className="order-1 lg:order-2 flex-none h-[30vh] sm:h-[35vh] lg:h-full lg:flex-1 min-w-0 w-full bg-[#18181c] flex flex-col items-center justify-center p-3 lg:p-6 border border-[#2b2b34] rounded-2xl relative shadow-2xl overflow-hidden">
         {!isLeftPanelOpen && (
           <button onClick={() => setIsLeftPanelOpen(true)} className="absolute top-4 left-4 z-20 text-gray-400 hover:text-white bg-[#212126] p-2 rounded-xl border border-[#2e2e38] shadow-lg transition" title="Open Captions Panel">
             <PanelLeftOpen className="w-4 h-4" />
