@@ -475,8 +475,22 @@ export const Editor: React.FC = () => {
     };
   }, []);
 
-  // Smart Auto-Collapse on Small / Decreased Screens (< 768px)
+  // User explicit manual preference for panels (defaults to open)
+  const userPrefLeftOpen = useRef(true);
+  const userPrefRightOpen = useRef(true);
+
+  const handleCloseLeftPanel = () => {
+    userPrefLeftOpen.current = false;
+    setIsLeftPanelOpen(false);
+  };
+
+  const handleCloseRightPanel = () => {
+    userPrefRightOpen.current = false;
+    setIsRightPanelOpen(false);
+  };
+
   const openLeftPanel = () => {
+    userPrefLeftOpen.current = true;
     setIsLeftPanelOpen(true);
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setIsRightPanelOpen(false);
@@ -484,6 +498,7 @@ export const Editor: React.FC = () => {
   };
 
   const openRightPanel = () => {
+    userPrefRightOpen.current = true;
     setIsRightPanelOpen(true);
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setIsLeftPanelOpen(false);
@@ -492,13 +507,24 @@ export const Editor: React.FC = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      if (typeof window === 'undefined') return;
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        // When decreased to mobile, collapse right panel so canvas stays visible
         setIsLeftPanelOpen(prevLeft => {
           if (prevLeft) {
             setIsRightPanelOpen(false);
           }
           return prevLeft;
         });
+      } else {
+        // When increased back to tablet/desktop, auto re-open panels unless user manually closed them!
+        if (userPrefLeftOpen.current) {
+          setIsLeftPanelOpen(true);
+        }
+        if (userPrefRightOpen.current) {
+          setIsRightPanelOpen(true);
+        }
       }
     };
     handleResize();
@@ -524,7 +550,7 @@ export const Editor: React.FC = () => {
                 Alok Video Editor
               </span>
             </div>
-            <button onClick={() => setIsLeftPanelOpen(false)} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
+            <button onClick={handleCloseLeftPanel} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
               <PanelLeftClose className="w-4 h-4" />
             </button>
           </div>
@@ -852,7 +878,7 @@ export const Editor: React.FC = () => {
       {/* Right Sidebar: Design & Animations */}
       {isRightPanelOpen && (
         <div className="w-[340px] lg:w-[360px] xl:w-[420px] 2xl:w-[480px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] flex flex-col rounded-2xl relative transform-gpu h-full shadow-2xl transition-all duration-200 overflow-hidden">
-          <StylePanel onClose={() => setIsRightPanelOpen(false)} />
+          <StylePanel onClose={handleCloseRightPanel} />
         </div>
       )}
       {/* Confirmation Modal */}
