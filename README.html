@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Cap's Style v1.0.0 — Installation Guide & Features</title>
+  <style>
+    :root {
+      --bg: #0e0e11;
+      --card-bg: #18181c;
+      --card-border: #26262e;
+      --accent-blue: #2563eb;
+      --accent-blue-light: #3b82f6;
+      --accent-orange: #f97316;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --code-bg: #121215;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* Header Banner */
+    .header {
+      background: linear-gradient(135deg, #1e1b4b 0%, #172554 50%, #0f172a 100%);
+      border: 1px solid #3b82f640;
+      border-radius: 16px;
+      padding: 40px 30px;
+      text-align: center;
+      margin-bottom: 40px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .header-badges {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-blue {
+      background: rgba(37, 99, 235, 0.2);
+      color: #60a5fa;
+      border: 1px solid #3b82f6;
+    }
+
+    .badge-orange {
+      background: rgba(249, 115, 22, 0.2);
+      color: #fb923c;
+      border: 1px solid #f97316;
+    }
+
+    .header h1 {
+      font-size: 36px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 10px;
+      letter-spacing: -0.5px;
+    }
+
+    .header p {
+      color: #cbd5e1;
+      font-size: 16px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    /* Section Styling */
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 10px;
+    }
+
+    /* Feature Grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 18px;
+    }
+
+    .feature-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-2px);
+      border-color: #3b82f680;
+    }
+
+    .feature-card h3 {
+      font-size: 16px;
+      color: #ffffff;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .feature-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* OS Installation Cards */
+    .os-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .os-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .os-card.win { border-top: 4px solid #00a4ef; }
+    .os-card.mac { border-top: 4px solid #a855f7; }
+    .os-card.linux { border-top: 4px solid #eab308; }
+
+    .os-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .os-icon {
+      font-size: 24px;
+    }
+
+    .os-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .step-list {
+      list-style: none;
+      counter-reset: step-counter;
+    }
+
+    .step-item {
+      position: relative;
+      padding-left: 32px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: #e5e7eb;
+    }
+
+    .step-item::before {
+      counter-increment: step-counter;
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 22px;
+      height: 22px;
+      background: #2b2b34;
+      border: 1px solid #3e3e4a;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #60a5fa;
+    }
+
+    .path-box {
+      background-color: var(--code-bg);
+      border: 1px solid #2d2d38;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 11px;
+      color: #38bdf8;
+      word-break: break-all;
+      margin-top: 6px;
+      user-select: all;
+    }
+
+    /* Workflow Steps */
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .workflow-card {
+      background: #151518;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .workflow-num {
+      width: 32px;
+      height: 32px;
+      background: #2563eb;
+      color: #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      margin: 0 auto 12px;
+    }
+
+    .workflow-card h4 {
+      font-size: 14px;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .workflow-card p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding-top: 30px;
+      border-top: 1px solid var(--card-border);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .footer a {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Header Banner -->
+    <div class="header">
+      <div class="header-badges">
+        <span class="badge badge-blue">v1.0.0 Official Release</span>
+        <span class="badge badge-orange">Alok Video Editor</span>
+      </div>
+      <h1>Auto Cap's Style</h1>
+      <p>AI-Powered Animated Captions & Subtitle Studio for DaVinci Resolve. Create viral, animated Reels, Shorts, and TikTok subtitles with 1-click timeline integration.</p>
+    </div>
+
+    <!-- Features Overview -->
+    <div class="section">
+      <h2 class="section-title">🌟 Key Features</h2>
+      <div class="feature-grid">
+        
+        <div class="feature-card">
+          <h3>⚡ 1-Click Timeline Extraction</h3>
+          <p>Extracts all subtitle tracks and timings directly from your active DaVinci Resolve timeline automatically with frame-level accuracy.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>✨ 10+ Pro Entrance Animations</h3>
+          <p>Includes Slide Left, Slide Right, Slide Up, Pop, Fade, Typewriter, Elastic, Kinetic, Chaos, and 3-Way Focus with smooth spring physics.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>🎤 Word-by-Word Karaoke</h3>
+          <p>Active spoken word tracking, cumulative reveal mode, and customizable color fade transitions (Fade In & Out, Snap, and Smooth Fade).</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>🔤 Dual Font Engine</h3>
+          <p>Independent Base Font and Highlight Font selection with individual sizing multipliers, line spacing, and letter spacing controls.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>💡 Drop Shadows & Inner Glow</h3>
+          <p>Configurable blur radius, shadow distance, angle offsets, opacity, and radiant glow effects for both base and highlighted words.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>💎 Alpha Transparency ProRes Export</h3>
+          <p>Export ultra-crisp ProRes 4444 (.mov) with 100% transparent alpha channels for instant overlay on video tracks in your timeline.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>📁 Dedicated Media Pool Management</h3>
+          <p>Automatically creates and manages rendered captions in the <code>📁Auto Caps Style</code> bin inside DaVinci Resolve.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>🖥️ Smart Responsive Studio Layout</h3>
+          <p>Pure multi-panel studio layout with live Remotion canvas preview, strict 9:16 aspect ratio scaling, and mobile auto-collapse.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Installation Guide -->
+    <div class="section">
+      <h2 class="section-title">💻 Installation Guide (All OS)</h2>
+      
+      <div class="os-grid">
+
+        <!-- Windows -->
+        <div class="os-card win">
+          <div class="os-header">
+            <span class="os-icon">🪟</span>
+            <div class="os-title">Windows 10 & 11</div>
+          </div>
+          <ol class="step-list">
+            <li class="step-item">
+              Install <b>Node.js LTS</b> from <a href="https://nodejs.org" target="_blank" style="color:#60a5fa;">nodejs.org</a> and <b>Python 3.11</b> from <a href="https://python.org" target="_blank" style="color:#60a5fa;">python.org</a> <i>(Enable "Add to PATH")</i>.
+            </li>
+            <li class="step-item">
+              Copy the <code>Auto Caps Style</code> folder into your Fusion Scripts directory:
+              <div class="path-box">C:\Users\&lt;Username&gt;\AppData\Roaming\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Utility\Auto Caps Style\</div>
+            </li>
+            <li class="step-item">
+              Open DaVinci Resolve and go to:
+              <div class="path-box">Workspace ➔ Scripts ➔ Auto Caps Style ➔ Auto Cap's Style</div>
+            </li>
+          </ol>
+        </div>
+
+        <!-- macOS -->
+        <div class="os-card mac">
+          <div class="os-header">
+            <span class="os-icon">🍎</span>
+            <div class="os-title">macOS (Apple Silicon & Intel)</div>
+          </div>
+          <ol class="step-list">
+            <li class="step-item">
+              Install Node.js & Python 3.11 via Homebrew or official PKG installers:
+              <div class="path-box">brew install node python@3.11</div>
+            </li>
+            <li class="step-item">
+              Copy the <code>Auto Caps Style</code> folder into:
+              <div class="path-box">~/Library/Application Support/Blackmagic Design/DaVinci Resolve/Fusion/Scripts/Utility/Auto Caps Style/</div>
+            </li>
+            <li class="step-item">
+              Open DaVinci Resolve and go to:
+              <div class="path-box">Workspace ➔ Scripts ➔ Auto Caps Style ➔ Auto Cap's Style</div>
+            </li>
+          </ol>
+        </div>
+
+        <!-- Linux -->
+        <div class="os-card linux">
+          <div class="os-header">
+            <span class="os-icon">🐧</span>
+            <div class="os-title">Linux (Ubuntu / Arch / Fedora)</div>
+          </div>
+          <ol class="step-list">
+            <li class="step-item">
+              Install prerequisites via terminal:
+              <div class="path-box">sudo apt install nodejs npm python3.11 python3-pip</div>
+            </li>
+            <li class="step-item">
+              Copy the <code>Auto Caps Style</code> folder into:
+              <div class="path-box">~/.local/share/DaVinciResolve/Fusion/Scripts/Utility/Auto Caps Style/</div>
+            </li>
+            <li class="step-item">
+              Open DaVinci Resolve and go to:
+              <div class="path-box">Workspace ➔ Scripts ➔ Auto Caps Style ➔ Auto Cap's Style</div>
+            </li>
+          </ol>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- How to Use Workflow -->
+    <div class="section">
+      <h2 class="section-title">📖 Quick Start Workflow</h2>
+      <div class="workflow-grid">
+        <div class="workflow-card">
+          <div class="workflow-num">1</div>
+          <h4>Create Subtitles</h4>
+          <p>Add a subtitle track to your DaVinci Resolve timeline with captions.</p>
+        </div>
+        <div class="workflow-card">
+          <div class="workflow-num">2</div>
+          <h4>Launch Plugin</h4>
+          <p>Open <b>Workspace ➔ Scripts ➔ Auto Cap's Style</b>. Captions load instantly.</p>
+        </div>
+        <div class="workflow-card">
+          <div class="workflow-num">3</div>
+          <h4>Customize Design</h4>
+          <p>Pick fonts, animations (Slide Left, Pop, etc.), and karaoke colors.</p>
+        </div>
+        <div class="workflow-card">
+          <div class="workflow-num">4</div>
+          <h4>Render & Place</h4>
+          <p>Click <b>Render Final Video</b>. Auto-imports directly to your timeline!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p><b>Auto Cap's Style v1.0.0</b> &bull; Developed by <a href="https://alokvideoeditor.com" target="_blank">Alok Video Editor</a></p>
+      <p style="margin-top: 6px; font-size: 11px;">Protected Proprietary Software &bull; All Rights Reserved.</p>
+    </div>
+
+  </div>
+
+</body>
+</html>
