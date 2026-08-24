@@ -482,7 +482,7 @@ export const Editor: React.FC = () => {
 
       {/* Left Sidebar: Captions, Render */}
       {isLeftPanelOpen && (
-        <div className="w-[300px] xl:w-[380px] 2xl:w-[450px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] flex flex-col rounded-2xl relative z-10 h-full shadow-2xl transition-all duration-200 overflow-hidden">
+        <div className="w-[260px] lg:w-[280px] xl:w-[340px] 2xl:w-[400px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] flex flex-col rounded-2xl relative z-10 h-full shadow-2xl transition-all duration-200 overflow-hidden">
           {/* Watermark and Toggle */}
           <div className="px-4 py-3 flex justify-between items-center flex-shrink-0 border-b border-[#2b2b34]/80">
             <div className="flex flex-col">
@@ -773,17 +773,18 @@ export const Editor: React.FC = () => {
                 acknowledgeRemotionLicense={true}
                 style={styleConfig.aspectRatio === '16:9' ? {
                   width: '100%',
-                  maxWidth: 'min(100%, calc((100vh - 180px) * 16 / 9))',
-                  maxHeight: 'calc(100% - 65px)',
+                  maxWidth: 'min(100%, calc((100vh - 160px) * 16 / 9))',
+                  maxHeight: 'calc(100% - 60px)',
                   aspectRatio: '16 / 9',
                   boxShadow: '0 0 45px rgba(0,0,0,0.95)',
                   border: '2px solid #24242e',
                   borderRadius: '14px',
                   overflow: 'hidden',
                 } : {
-                  height: '100%',
-                  maxHeight: 'calc(100% - 65px)',
-                  maxWidth: 'min(100%, calc((100vh - 180px) * 9 / 16))',
+                  width: 'auto',
+                  height: 'auto',
+                  maxHeight: 'calc(100% - 60px)',
+                  maxWidth: 'min(100%, calc((100vh - 160px) * 9 / 16))',
                   aspectRatio: '9 / 16',
                   boxShadow: '0 0 45px rgba(0,0,0,0.95)',
                   border: '2px solid #24242e',
@@ -820,7 +821,7 @@ export const Editor: React.FC = () => {
 
       {/* Right Sidebar: Design & Animations */}
       {isRightPanelOpen && (
-        <div className="w-[360px] xl:w-[440px] 2xl:w-[520px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] overflow-y-auto flex flex-col rounded-2xl p-3 relative transform-gpu h-full shadow-2xl transition-all duration-200">
+        <div className="w-[300px] lg:w-[320px] xl:w-[380px] 2xl:w-[440px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] overflow-y-auto flex flex-col rounded-2xl p-3 relative transform-gpu h-full shadow-2xl transition-all duration-200">
           <div className="flex justify-end absolute top-3.5 right-3.5 z-20">
             <button onClick={() => setIsRightPanelOpen(false)} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
               <PanelRightClose className="w-4 h-4" />
