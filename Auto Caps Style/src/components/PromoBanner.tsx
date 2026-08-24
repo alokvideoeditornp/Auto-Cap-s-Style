@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { X, ExternalLink, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SingleAd {
   enabled?: boolean | number | string;
@@ -13,22 +13,39 @@ interface SingleAd {
   link?: string;
   altText?: string;
   badge?: string;
-  fallbackTitle?: string;
-  fallbackSubtitle?: string;
 }
 
-const CACHE_KEY = 'autocapstyle_cached_ads_v2';
+const CACHE_KEY = 'autocapstyle_cached_ads_v3';
 
-// Default offline ad that displays if user has never connected to internet
-const DEFAULT_OFFLINE_ADS: SingleAd[] = [
+const resolveDirectMediaUrl = (url?: string): string => {
+  if (!url) return '';
+  let clean = url.trim();
+
+  // If it's a relative path like "Images/ad.png" or "Videos/ad.webm" or "ad.gif"
+  if (!clean.startsWith('http://') && !clean.startsWith('https://') && !clean.startsWith('/')) {
+    clean = clean.replace(/^\.\//, '');
+    clean = `https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/${clean}`;
+  } else if (clean.includes('github.com') && clean.includes('/blob/')) {
+    clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+  } else if (clean.includes('github.com') && clean.includes('/raw/')) {
+    clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/raw/', '/');
+  }
+
+  try {
+    return encodeURI(decodeURI(clean));
+  } catch (_) {
+    return encodeURI(clean);
+  }
+};
+
+const DEFAULT_ADS: SingleAd[] = [
   {
     enabled: 1,
-    badge: "FEATURED",
+    badge: "35% OFF",
     altText: "Auto File Organizer Pro",
-    imageUrl: "https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/Images/ad_Auto%20File%20Organizer%20Pro.png",
-    link: "https://payhip.com/b/HbZKp",
-    fallbackTitle: "Auto File Organizer Pro",
-    fallbackSubtitle: "Automate and organize your DaVinci Resolve media in 1-Click"
+    imageUrl: resolveDirectMediaUrl("Images/ad_Auto File Organizer Pro.png"),
+    localImageUrl: "/ads_cache/ad_Auto File Organizer Pro.png",
+    link: "https://payhip.com/b/HbZKp"
   }
 ];
 
@@ -44,11 +61,11 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   className = '',
   dismissible = false
 }) => {
-  const [adList, setAdList] = useState<SingleAd[]>(DEFAULT_OFFLINE_ADS);
+  const [adList, setAdList] = useState<SingleAd[]>(DEFAULT_ADS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [mediaErrorMap, setMediaErrorMap] = useState<{ [key: number]: boolean }>({});
+  const [fallbackAttemptMap, setFallbackAttemptMap] = useState<{ [key: number]: boolean }>({});
   const isOpeningRef = useRef(false);
 
   // Background Sync Engine: Fetches fresh ads, downloads media to local disk, and purges removed ads
@@ -115,13 +132,27 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   }
 
   const currentAd = adList[currentIndex] || adList[0];
-  const hasError = mediaErrorMap[currentIndex];
-  const isVideo = isVideoSource(currentAd) && !hasError;
-  
-  // Prefer local cached media file on disk; fallback to remote URL
-  const mediaUrl = isVideo 
-    ? (currentAd.localVideoUrl || currentAd.videoUrl || currentAd.localImageUrl || currentAd.imageUrl || '') 
-    : (currentAd.localImageUrl || currentAd.imageUrl || currentAd.localVideoUrl || currentAd.videoUrl || '');
+  const isVideo = isVideoSource(currentAd);
+  const isFailedLocal = fallbackAttemptMap[currentIndex];
+
+  // If local file failed, fallback to direct GitHub online URL
+  let mediaUrl = '';
+  if (isVideo) {
+    mediaUrl = (!isFailedLocal && currentAd.localVideoUrl) 
+      ? currentAd.localVideoUrl 
+      : resolveDirectMediaUrl(currentAd.videoUrl || currentAd.localVideoUrl || '');
+  } else {
+    mediaUrl = (!isFailedLocal && currentAd.localImageUrl) 
+      ? currentAd.localImageUrl 
+      : resolveDirectMediaUrl(currentAd.imageUrl || currentAd.localImageUrl || '');
+  }
+
+  // Ensure fully encoded URL for spaces
+  try {
+    mediaUrl = encodeURI(decodeURI(mediaUrl));
+  } catch (_) {
+    mediaUrl = encodeURI(mediaUrl);
+  }
 
   const handleOpenLink = async (e: React.MouseEvent, link?: string) => {
     e.preventDefault();
@@ -219,23 +250,12 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
         </div>
       </div>
 
-      {/* Clickable Media Banner (WebM Video, Image, or Offline Fallback Card) */}
+      {/* Clickable Media Banner (REAL Image or Video) */}
       <div 
         onClick={(e) => handleOpenLink(e, currentAd.link)}
         className="relative block cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 hover:scale-[1.01] bg-[#121216]"
       >
-        {hasError ? (
-          /* Offline styled visual card if image file is unreachable */
-          <div className="w-full min-h-[90px] p-3 rounded-lg bg-gradient-to-r from-blue-950/70 via-[#181822] to-purple-950/70 border border-blue-500/20 flex flex-col justify-center gap-1">
-            <div className="flex items-center gap-1.5 text-blue-400 text-xs font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-              <span>{currentAd.fallbackTitle || currentAd.altText || "Auto File Organizer Pro"}</span>
-            </div>
-            <p className="text-[11px] text-gray-400 leading-snug line-clamp-2">
-              {currentAd.fallbackSubtitle || "Automate and organize your DaVinci Resolve media in 1-Click."}
-            </p>
-          </div>
-        ) : isVideo ? (
+        {isVideo ? (
           <video
             key={mediaUrl}
             src={mediaUrl}
@@ -245,7 +265,9 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
             playsInline
             controls={false}
             onError={() => {
-              setMediaErrorMap(prev => ({ ...prev, [currentIndex]: true }));
+              if (!fallbackAttemptMap[currentIndex]) {
+                setFallbackAttemptMap(prev => ({ ...prev, [currentIndex]: true }));
+              }
             }}
             onLoadedMetadata={(e) => {
               e.currentTarget.muted = true;
@@ -263,7 +285,9 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
             src={mediaUrl}
             alt={currentAd.altText || 'Sponsored Promotion'}
             onError={() => {
-              setMediaErrorMap(prev => ({ ...prev, [currentIndex]: true }));
+              if (!fallbackAttemptMap[currentIndex]) {
+                setFallbackAttemptMap(prev => ({ ...prev, [currentIndex]: true }));
+              }
             }}
             className="w-full h-auto max-h-[140px] object-cover rounded-lg transition-opacity duration-300"
           />
