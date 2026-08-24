@@ -781,10 +781,9 @@ export const Editor: React.FC = () => {
                   borderRadius: '14px',
                   overflow: 'hidden',
                 } : {
-                  width: 'auto',
-                  height: 'auto',
-                  maxHeight: 'calc(100% - 60px)',
-                  maxWidth: 'min(100%, calc((100vh - 160px) * 9 / 16))',
+                  height: '100%',
+                  maxHeight: 'calc(100% - 65px)',
+                  maxWidth: 'min(100%, calc((100vh - 180px) * 9 / 16))',
                   aspectRatio: '9 / 16',
                   boxShadow: '0 0 45px rgba(0,0,0,0.95)',
                   border: '2px solid #24242e',
