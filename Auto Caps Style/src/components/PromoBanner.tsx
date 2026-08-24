@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ExternalLink, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 
 interface SingleAd {
   enabled?: boolean | number | string;
@@ -31,7 +31,7 @@ const resolveDirectMediaUrl = (url?: string): string => {
   if (!url) return '';
   let clean = url.trim();
 
-  // If it's a relative path like "Images/ad.png" or "Videos/Ads .mp4"
+  // If it's a relative path like "Images/ad.png" or "Videos/ad.webm" or "ad.gif"
   if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
     clean = clean.replace(/^\.\//, '').replace(/^\//, '');
     clean = `https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/${clean}`;
@@ -41,7 +41,6 @@ const resolveDirectMediaUrl = (url?: string): string => {
     clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/raw/', '/');
   }
 
-  // Properly encode special characters and spaces in filenames
   try {
     return encodeURI(decodeURI(clean));
   } catch (_) {
@@ -53,7 +52,7 @@ const isVideoSource = (ad: SingleAd): boolean => {
   if (ad.type === 'video') return true;
   if (ad.videoUrl && ad.videoUrl.trim().length > 0) return true;
   const src = (ad.videoUrl || ad.imageUrl || '').toLowerCase();
-  return src.endsWith('.mp4') || src.endsWith('.webm') || src.endsWith('.mov') || src.endsWith('.m4v') || src.includes('.mp4?') || src.includes('.webm?');
+  return src.endsWith('.webm') || src.endsWith('.mp4') || src.endsWith('.mov') || src.endsWith('.m4v') || src.includes('.webm?') || src.includes('.mp4?');
 };
 
 const isItemEnabled = (val: any): boolean => {
@@ -71,6 +70,7 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [videoErrorMap, setVideoErrorMap] = useState<{ [key: number]: boolean }>({});
   const [loadedMedia, setLoadedMedia] = useState<{ [key: number]: boolean }>({});
   const isOpeningRef = useRef(false);
 
@@ -138,7 +138,7 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   }
 
   const currentAd = adList[currentIndex] || adList[0];
-  const isVideo = isVideoSource(currentAd);
+  const isVideo = isVideoSource(currentAd) && !videoErrorMap[currentIndex];
   const mediaUrl = isVideo ? (currentAd.videoUrl || currentAd.imageUrl || '') : (currentAd.imageUrl || currentAd.videoUrl || '');
 
   const handleOpenLink = async (e: React.MouseEvent, link?: string) => {
@@ -237,7 +237,7 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
         </div>
       </div>
 
-      {/* Clickable Media Banner (Image or Video) */}
+      {/* Clickable Media Banner (WebM Video, GIF, WebP, or Image) */}
       <div 
         onClick={(e) => handleOpenLink(e, currentAd.link)}
         className="relative block cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 hover:scale-[1.01] bg-[#121216]"
@@ -251,6 +251,10 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
             muted
             playsInline
             controls={false}
+            onError={() => {
+              // If video codec is not supported by Qt, fallback gracefully
+              setVideoErrorMap(prev => ({ ...prev, [currentIndex]: true }));
+            }}
             onLoadedMetadata={(e) => {
               e.currentTarget.muted = true;
               e.currentTarget.play().catch(() => {});
