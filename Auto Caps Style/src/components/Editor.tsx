@@ -475,24 +475,24 @@ export const Editor: React.FC = () => {
     };
   }, []);
 
-  // Smart Auto-Collapse on Small / Decreased Screens (< 1250px)
+  // Smart Auto-Collapse on Small / Decreased Screens (< 768px)
   const openLeftPanel = () => {
     setIsLeftPanelOpen(true);
-    if (typeof window !== 'undefined' && window.innerWidth < 1250) {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setIsRightPanelOpen(false);
     }
   };
 
   const openRightPanel = () => {
     setIsRightPanelOpen(true);
-    if (typeof window !== 'undefined' && window.innerWidth < 1250) {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setIsLeftPanelOpen(false);
     }
   };
 
   useEffect(() => {
     const handleResize = () => {
-      if (typeof window !== 'undefined' && window.innerWidth < 1250) {
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
         setIsLeftPanelOpen(prevLeft => {
           if (prevLeft) {
             setIsRightPanelOpen(false);
