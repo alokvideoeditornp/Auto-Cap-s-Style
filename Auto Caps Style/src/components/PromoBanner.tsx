@@ -31,24 +31,27 @@ const resolveDirectMediaUrl = (url?: string): string => {
   if (!url) return '';
   let clean = url.trim();
 
-  // If it's a relative path like "images/ad1.png" or "videos/ad.mp4" or "ad.mp4"
+  // If it's a relative path like "Images/ad.png" or "Videos/Ads .mp4"
   if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
     clean = clean.replace(/^\.\//, '').replace(/^\//, '');
-    return `https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/${clean}`;
-  }
-
-  // If it's a GitHub URL
-  if (clean.includes('github.com') && clean.includes('/blob/')) {
+    clean = `https://raw.githubusercontent.com/alokvideoeditornp/Auto-cap-s-Style-ad/main/${clean}`;
+  } else if (clean.includes('github.com') && clean.includes('/blob/')) {
     clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
   } else if (clean.includes('github.com') && clean.includes('/raw/')) {
     clean = clean.replace('github.com', 'raw.githubusercontent.com').replace('/raw/', '/');
   }
-  return clean;
+
+  // Properly encode special characters and spaces in filenames
+  try {
+    return encodeURI(decodeURI(clean));
+  } catch (_) {
+    return encodeURI(clean);
+  }
 };
 
 const isVideoSource = (ad: SingleAd): boolean => {
   if (ad.type === 'video') return true;
-  if (ad.videoUrl) return true;
+  if (ad.videoUrl && ad.videoUrl.trim().length > 0) return true;
   const src = (ad.videoUrl || ad.imageUrl || '').toLowerCase();
   return src.endsWith('.mp4') || src.endsWith('.webm') || src.endsWith('.mov') || src.endsWith('.m4v') || src.includes('.mp4?') || src.includes('.webm?');
 };
@@ -70,7 +73,6 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
   const [isPaused, setIsPaused] = useState(false);
   const [loadedMedia, setLoadedMedia] = useState<{ [key: number]: boolean }>({});
   const isOpeningRef = useRef(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -91,13 +93,13 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
               .filter((ad: any) => isItemEnabled(ad.enabled) && (ad.imageUrl || ad.videoUrl))
               .map((ad: any) => ({
                 ...ad,
-                imageUrl: resolveDirectMediaUrl(ad.imageUrl),
-                videoUrl: resolveDirectMediaUrl(ad.videoUrl)
+                imageUrl: ad.imageUrl ? resolveDirectMediaUrl(ad.imageUrl) : undefined,
+                videoUrl: ad.videoUrl ? resolveDirectMediaUrl(ad.videoUrl) : undefined
               }));
           } else if ((data.imageUrl || data.videoUrl) && isItemEnabled(data.enabled)) {
             list = [{
-              imageUrl: resolveDirectMediaUrl(data.imageUrl),
-              videoUrl: resolveDirectMediaUrl(data.videoUrl),
+              imageUrl: data.imageUrl ? resolveDirectMediaUrl(data.imageUrl) : undefined,
+              videoUrl: data.videoUrl ? resolveDirectMediaUrl(data.videoUrl) : undefined,
               type: data.type,
               link: data.link,
               altText: data.altText,
@@ -238,20 +240,28 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
       {/* Clickable Media Banner (Image or Video) */}
       <div 
         onClick={(e) => handleOpenLink(e, currentAd.link)}
-        className="relative block cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 hover:scale-[1.01]"
+        className="relative block cursor-pointer overflow-hidden rounded-lg transition-transform duration-300 hover:scale-[1.01] bg-[#121216]"
       >
         {isVideo ? (
           <video
             key={mediaUrl}
-            ref={videoRef}
             src={mediaUrl}
             autoPlay
             loop
             muted
             playsInline
-            preload="auto"
-            onLoadedData={() => setLoadedMedia(prev => ({ ...prev, [currentIndex]: true }))}
-            className={`w-full h-auto object-cover rounded-lg transition-all duration-300 ${loadedMedia[currentIndex] ? 'opacity-100' : 'opacity-0 h-20 bg-[#21212a] animate-pulse'}`}
+            controls={false}
+            onLoadedMetadata={(e) => {
+              e.currentTarget.muted = true;
+              e.currentTarget.play().catch(() => {});
+              setLoadedMedia(prev => ({ ...prev, [currentIndex]: true }));
+            }}
+            onCanPlay={(e) => {
+              e.currentTarget.muted = true;
+              e.currentTarget.play().catch(() => {});
+              setLoadedMedia(prev => ({ ...prev, [currentIndex]: true }));
+            }}
+            className="w-full h-auto max-h-[140px] object-cover rounded-lg transition-opacity duration-300"
           />
         ) : (
           <img
@@ -259,7 +269,7 @@ export const PromoBanner: React.FC<{ className?: string; dismissible?: boolean }
             src={mediaUrl}
             alt={currentAd.altText || 'Sponsored Promotion'}
             onLoad={() => setLoadedMedia(prev => ({ ...prev, [currentIndex]: true }))}
-            className={`w-full h-auto object-cover rounded-lg transition-all duration-300 ${loadedMedia[currentIndex] ? 'opacity-100' : 'opacity-0 h-20 bg-[#21212a] animate-pulse'}`}
+            className="w-full h-auto max-h-[140px] object-cover rounded-lg transition-opacity duration-300"
           />
         )}
         
