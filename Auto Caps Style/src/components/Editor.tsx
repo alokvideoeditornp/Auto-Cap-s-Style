@@ -757,9 +757,8 @@ export const Editor: React.FC = () => {
                 autoPlay
                 acknowledgeRemotionLicense={true}
                 style={{
-                  width: 'auto',
-                  height: 'auto',
-                  maxHeight: 'calc(100% - 60px)',
+                  height: '100%',
+                  maxHeight: 'calc(100% - 65px)',
                   maxWidth: '100%',
                   aspectRatio: styleConfig.aspectRatio === '16:9' ? '16/9' : '9/16',
                   boxShadow: '0 0 45px rgba(0,0,0,0.9)',
