@@ -118,8 +118,9 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
         return w > max ? w : max;
       }, 0);
 
-      const contentW = Math.max(content.scrollWidth, contentRect.width, maxSingleSpanW);
-      const contentH = Math.max(content.scrollHeight, contentRect.height);
+      // Measure actual text overflow width (scrollWidth or widest single span)
+      const contentW = Math.max(content.scrollWidth, maxSingleSpanW);
+      const contentH = content.scrollHeight;
 
       // Restore alignment
       content.style.justifyContent = originalJustifyContent;
@@ -129,13 +130,17 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       useProjectStore.getState().setIsCaptionOutOfBounds(false);
 
       let scale = 1;
-      if (contentW > containerW || contentH > containerH) {
+      // Only scale down if text actually overflows the container width
+      if (contentW > containerW && containerW > 0) {
         const scaleX = containerW / contentW;
+        scale = Math.min(1, scaleX * 0.98);
+        scale = Math.floor(scale * 100) / 100;
+      }
+
+      // If user explicitly enabled Clip Text, also scale down vertically if overflowing
+      if (styleConfig.clipText && containerH > 0 && contentH > containerH) {
         const scaleY = containerH / contentH;
-        // Only scale down to fit, never up above 1.
-        scale = Math.min(scaleX, scaleY, 1);
-        if (scale < 1) scale = scale * 0.98;
-        // Round to 2 decimal places for stable headless renderer output
+        scale = Math.min(scale, Math.min(1, scaleY * 0.98));
         scale = Math.floor(scale * 100) / 100;
       }
 
