@@ -105,16 +105,17 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       layoutRows.forEach(row => row.style.justifyContent = 'flex-start');
 
       const childrenSpans = Array.from(content.querySelectorAll('span'));
-      const containerRect = container.getBoundingClientRect();
-      const contentRect = content.getBoundingClientRect();
+      
+      // CRITICAL: Remotion Player scales the entire canvas using CSS transform: scale(...).
+      // getBoundingClientRect() returns scaled screen pixels (e.g. 270px) instead of the 1080px composition space!
+      // We MUST use clientWidth / offsetWidth to get the true unscaled composition coordinate dimensions.
+      const containerW = container.clientWidth || container.offsetWidth || 1080;
+      const containerH = container.clientHeight || container.offsetHeight || 1920;
 
-      const containerW = containerRect.width;
-      const containerH = containerRect.height;
-
-      // Measure un-transformed scroll/layout dimensions without mutating active DOM elements
+      // Measure un-transformed scroll/layout dimensions
       const maxSingleSpanW = childrenSpans.reduce((max, child) => {
         const el = child as HTMLElement;
-        const w = el.offsetWidth || el.getBoundingClientRect().width;
+        const w = el.offsetWidth || el.scrollWidth || 0;
         return w > max ? w : max;
       }, 0);
 
