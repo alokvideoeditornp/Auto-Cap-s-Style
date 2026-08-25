@@ -104,32 +104,22 @@ export const CaptionLine: React.FC<CaptionLineProps> = ({ segment, styleConfig, 
       const originalRowJustify = layoutRows.map(row => row.style.justifyContent);
       layoutRows.forEach(row => row.style.justifyContent = 'flex-start');
 
-      // Strip transforms from animated children to get true layout size.
       const childrenSpans = Array.from(content.querySelectorAll('span'));
-      const originalTransforms = childrenSpans.map(child => (child as HTMLElement).style.transform);
-      childrenSpans.forEach(child => (child as HTMLElement).style.transform = 'none');
-
       const containerRect = container.getBoundingClientRect();
       const contentRect = content.getBoundingClientRect();
 
       const containerW = containerRect.width;
       const containerH = containerRect.height;
 
-      // Also find the widest individual word span.
-      // The content div has width:100% so contentRect.width always equals containerW,
-      // which means a single wide word (e.g. a long word at 1.3× accent size) would
-      // silently overflow without being detected. By measuring each span individually
-      // we catch any word that exceeds the container boundary.
+      // Measure un-transformed scroll/layout dimensions without mutating active DOM elements
       const maxSingleSpanW = childrenSpans.reduce((max, child) => {
-        const w = (child as HTMLElement).getBoundingClientRect().width;
+        const el = child as HTMLElement;
+        const w = el.offsetWidth || el.getBoundingClientRect().width;
         return w > max ? w : max;
       }, 0);
 
-      const contentW = Math.max(contentRect.width, maxSingleSpanW);
-      const contentH = contentRect.height;
-
-      // Restore children transforms
-      childrenSpans.forEach((child, i) => (child as HTMLElement).style.transform = originalTransforms[i]);
+      const contentW = Math.max(content.scrollWidth, contentRect.width, maxSingleSpanW);
+      const contentH = Math.max(content.scrollHeight, contentRect.height);
 
       // Restore alignment
       content.style.justifyContent = originalJustifyContent;
@@ -677,7 +667,9 @@ const AnimatedItem: React.FC<{
   extraStyles.marginTop = '-0.35em';
   extraStyles.marginBottom = '-0.5em';
 
-  if (isHighlighted && (styleConfig.highlightStyle === 'gradient' || (styleConfig.enableTextGradient && styleConfig.textGradientColors && styleConfig.textGradientColors.length > 0))) {
+  const isGradient = isHighlighted && (styleConfig.highlightStyle === 'gradient' || (styleConfig.enableTextGradient && styleConfig.textGradientColors && styleConfig.textGradientColors.length > 0));
+
+  if (isGradient) {
     if (styleConfig.highlightStyle === 'gradient') {
       const gColors = styleConfig.textGradientColors && styleConfig.textGradientColors.length > 0 ? styleConfig.textGradientColors : ['#8B5CF6', '#F0ABFC', '#8B5CF6', '#F0ABFC'];
       const count = styleConfig.gradientColorCount === 2 ? 2 : 4;
@@ -717,8 +709,11 @@ const AnimatedItem: React.FC<{
       extraStyles.backgroundImage = `linear-gradient(180deg, ${styleConfig.textGradientColors!.join(', ')})`;
     }
     extraStyles.WebkitBackgroundClip = 'text';
+    extraStyles.backgroundClip = 'text';
     extraStyles.WebkitTextFillColor = 'transparent';
-    extraStyles.color = 'transparent'; // Fallback
+    extraStyles.color = 'transparent';
+    // Prevent clipping ascenders / descenders on gradient text
+    extraStyles.display = 'inline-block';
   }
   
   if (isHighlighted && styleConfig.highlightStyle === 'highlight') {
@@ -959,15 +954,30 @@ const AnimatedItem: React.FC<{
      (!isHighlighted && styleConfig.dropShadowOnBase !== false));
 
   if (styleConfig.highlightStyle !== 'subtitle' && applyDropShadow) {
-    const dropShadowStr = `${shadowOffsetX.toFixed(1)}px ${shadowOffsetY.toFixed(1)}px ${shadowBlur}px rgba(${shadowRgb}, ${shadowAlpha})`;
-    if (extraStyles.textShadow) {
-      extraStyles.textShadow += `, ${dropShadowStr}`;
+    if (isGradient) {
+      // In CSS, text-shadow breaks WebkitBackgroundClip:'text' with transparent fill.
+      // We use CSS filter: drop-shadow(...) so the shadow renders smoothly BEHIND the gradient fill without glitching!
+      const dropShadowFilter = `drop-shadow(${shadowOffsetX.toFixed(1)}px ${shadowOffsetY.toFixed(1)}px ${shadowBlur}px rgba(${shadowRgb}, ${shadowAlpha}))`;
+      if (extraStyles.filter) {
+        extraStyles.filter += ` ${dropShadowFilter}`;
+      } else {
+        extraStyles.filter = dropShadowFilter;
+      }
     } else {
-      extraStyles.textShadow = dropShadowStr;
+      const dropShadowStr = `${shadowOffsetX.toFixed(1)}px ${shadowOffsetY.toFixed(1)}px ${shadowBlur}px rgba(${shadowRgb}, ${shadowAlpha})`;
+      if (extraStyles.textShadow) {
+        extraStyles.textShadow += `, ${dropShadowStr}`;
+      } else {
+        extraStyles.textShadow = dropShadowStr;
+      }
     }
   }
 
+  // SVG inner-shadow filter uses feComposite 'out' on SourceGraphic.
+  // When text is transparent (gradient fill), feComposite 'out' corrupts the alpha into black noise.
+  // We disable inner shadow on transparent gradient text to ensure silky smooth gradient rendering.
   const applyInnerShadow = styleConfig.enableInnerShadow !== false &&
+    !isGradient &&
     ((isHighlighted && styleConfig.innerShadowOnHighlight !== false) ||
      (!isHighlighted && styleConfig.innerShadowOnBase !== false));
      
