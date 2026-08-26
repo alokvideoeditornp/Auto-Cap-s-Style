@@ -1,5 +1,6 @@
 'use client';
 
+import { createPortal } from 'react-dom';
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Player } from '@remotion/player';
 import type { PlayerRef } from '@remotion/player';
@@ -69,6 +70,8 @@ export const Editor: React.FC = () => {
   } | null>(null);
   const [isUpdateDismissed, setIsUpdateDismissed] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showRestartModal, setShowRestartModal] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'installing' | 'success' | 'error'>('idle');
   const [updateErrorMessage, setUpdateErrorMessage] = useState('');
 
@@ -98,6 +101,7 @@ export const Editor: React.FC = () => {
       const data = await res.json();
       if (data && data.success) {
         setUpdateStatus('success');
+        setShowRestartModal(true);
       } else {
         setUpdateStatus('error');
         setUpdateErrorMessage(data?.error || 'Failed to replace files.');
@@ -658,6 +662,49 @@ export const Editor: React.FC = () => {
 
   return (
     <div className="flex flex-row h-screen overflow-hidden bg-[#141416] text-[#e5e7eb] p-3 lg:p-4 gap-3 lg:gap-4 relative font-sans">
+            {/* Automatic Update Success & Restart Modal */}
+      {showRestartModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[999999] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[#1c1c24] border border-emerald-500/40 rounded-2xl p-6 max-w-sm w-full shadow-2xl shadow-emerald-500/15 flex flex-col items-center text-center gap-4 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="w-14 h-14 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <CheckCircle className="w-8 h-8" />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-lg font-bold text-white tracking-wide">
+                Update Successful!
+              </h3>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                Auto Cap&apos;s Style has been updated to the latest version. Click <b className="text-white">OK</b> to close the plugin, then re-open it from DaVinci Resolve!
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={async () => {
+                setIsRestarting(true);
+                try {
+                  await fetch('/api/restart', { method: 'POST' });
+                } catch (_) {}
+                try { window.close(); } catch (_) {}
+              }}
+              disabled={isRestarting}
+              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isRestarting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Closing...
+                </>
+              ) : (
+                'OK'
+              )}
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* Automatic GitHub New Version In-App 1-Click Update Banner */}
       {updateInfo?.hasUpdate && !isUpdateDismissed && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[99999] max-w-xl w-[92%] sm:w-auto animate-in fade-in slide-in-from-top-4 duration-300 select-none">
