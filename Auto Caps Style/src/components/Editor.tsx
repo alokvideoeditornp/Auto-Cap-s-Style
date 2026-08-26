@@ -72,6 +72,14 @@ export const Editor: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showRestartModal, setShowRestartModal] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
+  const [updateElapsedTime, setUpdateElapsedTime] = useState(0);
+  const [updateDuration, setUpdateDuration] = useState(0);
+
+  const formatUpdateSecs = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  };
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'installing' | 'success' | 'error'>('idle');
   const [updateErrorMessage, setUpdateErrorMessage] = useState('');
 
@@ -91,6 +99,12 @@ export const Editor: React.FC = () => {
     setIsUpdating(true);
     setUpdateStatus('installing');
     setUpdateErrorMessage('');
+    setUpdateElapsedTime(0);
+
+    const startTime = Date.now();
+    const intervalTimer = setInterval(() => {
+      setUpdateElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
 
     try {
       const res = await fetch('/api/apply-update', {
@@ -99,6 +113,9 @@ export const Editor: React.FC = () => {
         body: JSON.stringify({ url: updateInfo?.downloadUrl }),
       });
       const data = await res.json();
+      const elapsed = Math.max(1, Math.floor((Date.now() - startTime) / 1000));
+      setUpdateDuration(elapsed);
+
       if (data && data.success) {
         setUpdateStatus('success');
         setShowRestartModal(true);
@@ -110,6 +127,7 @@ export const Editor: React.FC = () => {
       setUpdateStatus('error');
       setUpdateErrorMessage(err?.message || 'Update failed.');
     } finally {
+      clearInterval(intervalTimer);
       setIsUpdating(false);
     }
   };
@@ -675,7 +693,7 @@ export const Editor: React.FC = () => {
                 Update Successful!
               </h3>
               <p className="text-xs text-gray-300 leading-relaxed">
-                Auto Cap&apos;s Style has been updated to the latest version. Click <b className="text-white">OK</b> to close the plugin, then re-open it from DaVinci Resolve!
+                Auto Cap&apos;s Style has been updated to the latest version in <b className="text-emerald-400 font-semibold">{formatUpdateSecs(updateDuration)}</b>! Click <b className="text-white">OK</b> to close the plugin, then re-open it from DaVinci Resolve!
               </p>
             </div>
 
@@ -738,7 +756,7 @@ export const Editor: React.FC = () => {
                 </div>
                 <span className="text-[11px] text-gray-400">
                   {updateStatus === 'installing'
-                    ? 'Replacing files in background... please wait'
+                    ? `Downloading & installing... (${formatUpdateSecs(updateElapsedTime)} elapsed)`
                     : updateStatus === 'success'
                       ? 'Restart the plugin to run the new version'
                       : updateStatus === 'error'
@@ -772,7 +790,7 @@ export const Editor: React.FC = () => {
                   {isUpdating ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Updating...
+                      Updating ({formatUpdateSecs(updateElapsedTime)})...
                     </>
                   ) : (
                     <>
