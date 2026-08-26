@@ -116,6 +116,25 @@ export async function POST(req: Request) {
 
     copyRecursive(sourceDir, targetDir);
 
+    // Also sync the updated Auto Cap's Style.lua to DaVinci Resolve scripts folder if present
+    try {
+      const srcLua = path.join(sourceDir, "..", "Auto Cap's Style.lua");
+      const altSrcLua = path.join(sourceDir, "Auto Cap's Style.lua");
+      const chosenLua = fs.existsSync(srcLua) ? srcLua : (fs.existsSync(altSrcLua) ? altSrcLua : null);
+      if (chosenLua) {
+        const resolveLuaPaths = [
+          path.join(process.env.APPDATA || '', "Blackmagic Design", "DaVinci Resolve", "Support", "Fusion", "Scripts", "Utility", "Auto Caps Style", "Auto Cap's Style.lua"),
+          path.join(process.env.APPDATA || '', "Blackmagic Design", "DaVinci Resolve", "Support", "Fusion", "Scripts", "Utility", "Auto Cap's Style.lua"),
+        ];
+        for (const rlp of resolveLuaPaths) {
+          if (fs.existsSync(rlp)) {
+            fs.copyFileSync(chosenLua, rlp);
+          }
+        }
+      }
+    } catch (_) {}
+
+
     // 6. Ensure version files in targetDir reflect the new version
     try {
       const targetVer = path.join(targetDir, 'version.json');
