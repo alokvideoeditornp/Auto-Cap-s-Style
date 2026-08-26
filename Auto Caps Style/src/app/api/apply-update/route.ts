@@ -33,7 +33,6 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     let repoZipUrl = (body?.url || '').trim();
 
-    // Ensure it always downloads the ZIP archive and not an HTML page
     if (!repoZipUrl || !repoZipUrl.endsWith('.zip')) {
       repoZipUrl = 'https://github.com/alokvideoeditornp/Auto-Cap-s-Style/archive/refs/heads/main.zip';
     }
@@ -79,7 +78,21 @@ export async function POST(req: Request) {
 
     const targetDir = process.cwd();
 
-    // 4. Recursive replace files, strictly preserving data/ and NEVER touching .lua files
+    // 4. Read latest version from extracted version.json or package.json
+    let newVersion = '1.0.2';
+    try {
+      const extractedVerFile = path.join(sourceDir, 'version.json');
+      const extractedPkgFile = path.join(sourceDir, 'package.json');
+      if (fs.existsSync(extractedVerFile)) {
+        const vd = JSON.parse(fs.readFileSync(extractedVerFile, 'utf-8'));
+        if (vd.version) newVersion = vd.version;
+      } else if (fs.existsSync(extractedPkgFile)) {
+        const pd = JSON.parse(fs.readFileSync(extractedPkgFile, 'utf-8'));
+        if (pd.version) newVersion = pd.version;
+      }
+    } catch (_) {}
+
+    // 5. Recursive replace files, strictly preserving data/ and NEVER touching .lua files
     function copyRecursive(src: string, dest: string) {
       const items = fs.readdirSync(src);
       for (const item of items) {
@@ -103,7 +116,24 @@ export async function POST(req: Request) {
 
     copyRecursive(sourceDir, targetDir);
 
-    // 5. Recompile production build in targetDir
+    // 6. Ensure version files in targetDir reflect the new version
+    try {
+      const targetVer = path.join(targetDir, 'version.json');
+      fs.writeFileSync(targetVer, JSON.stringify({
+        version: newVersion,
+        downloadUrl: repoZipUrl,
+        changelog: 'Auto Caps Style updates and improvements!'
+      }, null, 2), 'utf-8');
+
+      const targetPkg = path.join(targetDir, 'package.json');
+      if (fs.existsSync(targetPkg)) {
+        const pd = JSON.parse(fs.readFileSync(targetPkg, 'utf-8'));
+        pd.version = newVersion;
+        fs.writeFileSync(targetPkg, JSON.stringify(pd, null, 2), 'utf-8');
+      }
+    } catch (_) {}
+
+    // 7. Recompile production build in targetDir
     try {
       const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
       await execPromise(`"${npmCmd}" run build`, { cwd: targetDir, timeout: 180000 });
@@ -111,7 +141,7 @@ export async function POST(req: Request) {
       console.warn('Post-update build notice:', buildErr?.message || buildErr);
     }
 
-    // 6. Cleanup temp files
+    // 8. Cleanup temp files
     try {
       fs.rmSync(tempDir, { recursive: true, force: true });
     } catch (_) {}
@@ -119,6 +149,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       message: 'Update installed successfully!',
+      newVersion
     });
   } catch (err: any) {
     try {

@@ -114,9 +114,7 @@ export const Editor: React.FC = () => {
     try {
       await fetch('/api/restart', { method: 'POST' });
     } catch (_) {}
-    setTimeout(() => {
-      window.location.reload();
-    }, 1200);
+    setUpdateStatus('restarting' as any);
   };
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
@@ -704,7 +702,11 @@ export const Editor: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              {updateStatus === 'success' ? (
+              {updateStatus === ('restarting' as any) ? (
+                <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-xl">
+                  Closing server... Please click Auto Cap&apos;s Style in Resolve
+                </span>
+              ) : updateStatus === 'success' ? (
                 <button
                   type="button"
                   onClick={handleRestartPlugin}
@@ -762,7 +764,7 @@ export const Editor: React.FC = () => {
                   <span className="text-blue-500">Auto Cap&apos;s</span> Style
                 </h1>
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 tracking-normal">
-                  v1.0.1
+                  {updateInfo?.currentVersion ? `v${updateInfo.currentVersion}` : 'v1.0.1'}
                 </span>
               </div>
               <span className="text-[10px] font-semibold text-blue-400/90 tracking-wider">

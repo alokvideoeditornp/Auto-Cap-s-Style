@@ -26,12 +26,23 @@ function isNewerVersion(remote: string, local: string): boolean {
 export async function GET() {
   try {
     let currentVersion = '1.0.1';
-    const pkgPath = path.resolve(process.cwd(), 'package.json');
-    if (fs.existsSync(pkgPath)) {
-      try {
-        const pkgData = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-        if (pkgData.version) currentVersion = pkgData.version;
-      } catch (_) {}
+    
+    // Check all local version files
+    const localCandidates = [
+      path.resolve(process.cwd(), 'version.json'),
+      path.resolve(process.cwd(), '..', 'version.json'),
+      path.resolve(process.cwd(), 'package.json'),
+    ];
+
+    for (const cPath of localCandidates) {
+      if (fs.existsSync(cPath)) {
+        try {
+          const data = JSON.parse(fs.readFileSync(cPath, 'utf-8'));
+          if (data.version && isNewerVersion(data.version, currentVersion)) {
+            currentVersion = data.version;
+          }
+        } catch (_) {}
+      }
     }
 
     const timestamp = Date.now();
@@ -42,7 +53,7 @@ export async function GET() {
     ];
 
     let latestVersion = currentVersion;
-    let downloadUrl = 'https://github.com/alokvideoeditornp/Auto-Cap-s-Style';
+    let downloadUrl = 'https://github.com/alokvideoeditornp/Auto-Cap-s-Style/archive/refs/heads/main.zip';
     let changelog = '';
 
     for (const u of urls) {
