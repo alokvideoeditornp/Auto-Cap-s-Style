@@ -1447,7 +1447,7 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
                   }`}
                   title={mode === 'karaoke-cumulative' ? 'Words fill and stay highlighted as spoken' : 'Highlights one active word at a time'}
                 >
-                  {mode === 'karaoke-cumulative' ? 'Color Fill' : 'Karaoke'}
+                  {mode === 'karaoke-cumulative' ? 'Karaoke +' : 'Karaoke'}
                 </button>
               ))}
             </div>
