@@ -59,11 +59,11 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(await res.arrayBuffer());
     fs.writeFileSync(zipPath, buffer);
 
-    // 2. Extract Archive safely
+    // 2. Extract Archive safely across all platforms (Windows, macOS, Linux)
     if (process.platform === 'win32') {
       await execPromise(`powershell -NoProfile -Command "Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${extractPath}' -Force"`);
     } else {
-      await execPromise(`unzip -o "${zipPath}" -d "${extractPath}"`);
+      await execPromise(`unzip -o "${zipPath}" -d "${extractPath}" || python3 -c "import zipfile; zipfile.ZipFile('${zipPath}').extractall('${extractPath}')"`);
     }
 
     // 3. Find frontend source directory containing package.json & src
@@ -116,15 +116,22 @@ export async function POST(req: Request) {
 
     copyRecursive(sourceDir, targetDir);
 
-    // Also sync the updated Auto Cap's Style.lua to DaVinci Resolve scripts folder if present
+    // 6. Cross-platform sync of Auto Cap's Style.lua to DaVinci Resolve scripts directory
     try {
       const srcLua = path.join(sourceDir, "..", "Auto Cap's Style.lua");
       const altSrcLua = path.join(sourceDir, "Auto Cap's Style.lua");
       const chosenLua = fs.existsSync(srcLua) ? srcLua : (fs.existsSync(altSrcLua) ? altSrcLua : null);
       if (chosenLua) {
         const resolveLuaPaths = [
+          // Windows
           path.join(process.env.APPDATA || '', "Blackmagic Design", "DaVinci Resolve", "Support", "Fusion", "Scripts", "Utility", "Auto Caps Style", "Auto Cap's Style.lua"),
           path.join(process.env.APPDATA || '', "Blackmagic Design", "DaVinci Resolve", "Support", "Fusion", "Scripts", "Utility", "Auto Cap's Style.lua"),
+          // macOS
+          path.join(os.homedir(), "Library", "Application Support", "Blackmagic Design", "DaVinci Resolve", "Fusion", "Scripts", "Utility", "Auto Caps Style", "Auto Cap's Style.lua"),
+          path.join(os.homedir(), "Library", "Application Support", "Blackmagic Design", "DaVinci Resolve", "Fusion", "Scripts", "Utility", "Auto Cap's Style.lua"),
+          // Linux
+          path.join(os.homedir(), ".local", "share", "DaVinciResolve", "Fusion", "Scripts", "Utility", "Auto Caps Style", "Auto Cap's Style.lua"),
+          path.join(os.homedir(), ".local", "share", "DaVinciResolve", "Fusion", "Scripts", "Utility", "Auto Cap's Style.lua"),
         ];
         for (const rlp of resolveLuaPaths) {
           if (fs.existsSync(rlp)) {
@@ -134,8 +141,7 @@ export async function POST(req: Request) {
       }
     } catch (_) {}
 
-
-    // 6. Ensure version files in targetDir reflect the new version
+    // 7. Ensure version files in targetDir reflect the new version
     try {
       const targetVer = path.join(targetDir, 'version.json');
       fs.writeFileSync(targetVer, JSON.stringify({
@@ -152,7 +158,7 @@ export async function POST(req: Request) {
       }
     } catch (_) {}
 
-    // 7. Recompile production build in targetDir
+    // 8. Recompile production build in targetDir
     try {
       const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
       await execPromise(`"${npmCmd}" run build`, { cwd: targetDir, timeout: 180000 });
@@ -160,7 +166,7 @@ export async function POST(req: Request) {
       console.warn('Post-update build notice:', buildErr?.message || buildErr);
     }
 
-    // 8. Cleanup temp files
+    // 9. Cleanup temp files
     try {
       fs.rmSync(tempDir, { recursive: true, force: true });
     } catch (_) {}

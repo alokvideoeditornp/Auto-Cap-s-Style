@@ -10,7 +10,10 @@ export async function POST() {
           process.exit(0);
         });
       } else {
-        process.exit(0);
+        // macOS and Linux clean shutdown
+        exec('pkill -f AutoCapStyle_Core.py || killall python3 2>/dev/null; pkill -f "next" || pkill -f "node" 2>/dev/null', () => {
+          process.exit(0);
+        });
       }
     }, 400);
 
