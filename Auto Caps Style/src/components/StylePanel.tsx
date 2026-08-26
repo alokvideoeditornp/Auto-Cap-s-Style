@@ -413,11 +413,31 @@ const CustomColorPicker = ({
   onSave: (c: string) => void, 
   onRemove: (c: string) => void 
 }) => {
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; color: string } | null>(null);
+
+  useEffect(() => {
+    const handleClose = () => setContextMenu(null);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setContextMenu(null);
+    };
+    if (contextMenu) {
+      window.addEventListener('click', handleClose);
+      window.addEventListener('contextmenu', handleClose);
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('click', handleClose);
+      window.removeEventListener('contextmenu', handleClose);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [contextMenu]);
+
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1 min-h-[16px] mb-1">
         <label className="text-[10px] leading-tight text-gray-400 font-medium flex-1 truncate" title={label}>{label}</label>
         <button 
+          type="button"
           onClick={() => onSave(value)}
           className="shrink-0 text-[12px] font-bold w-4 h-4 flex items-center justify-center bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 rounded border border-blue-500/30 transition leading-none cursor-pointer"
           title="Save this color to your palette"
@@ -437,13 +457,50 @@ const CustomColorPicker = ({
             <div 
               key={`${c}-${i}`}
               onClick={() => onChange(c)}
-              onContextMenu={(e) => { e.preventDefault(); onRemove(c); }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setContextMenu({ x: e.clientX, y: e.clientY, color: c });
+              }}
               className="w-4 h-4 rounded-sm border border-gray-600 cursor-pointer hover:scale-110 transition-transform"
               style={{ backgroundColor: c }}
-              title={`${c} (Right-click to remove)`}
+              title={`${c} (Right-click to delete)`}
             />
           ))}
         </div>
+      )}
+
+      {contextMenu && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed z-[999999] bg-[#1c1c22] border border-[#383844] rounded-xl shadow-2xl p-2 min-w-[150px] flex flex-col gap-1.5 animate-in fade-in zoom-in-95 duration-100"
+          style={{ 
+            left: Math.min(contextMenu.x, window.innerWidth - 170), 
+            top: Math.min(contextMenu.y, window.innerHeight - 90) 
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-2 px-2 py-1 border-b border-[#2e2e38]">
+            <div 
+              className="w-4 h-4 rounded border border-white/20 shrink-0 shadow-sm" 
+              style={{ backgroundColor: contextMenu.color }} 
+            />
+            <span className="text-xs font-mono font-bold text-gray-300 uppercase">
+              {contextMenu.color}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              onRemove(contextMenu.color);
+              setContextMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-red-400 hover:text-white hover:bg-red-600/30 rounded-lg transition-colors text-left cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Color</span>
+          </button>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -468,6 +525,7 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
     showTextBoxBorder,
     setShowTextBoxBorder,
     customColors,
+    setCustomColors,
     addCustomColor,
     removeCustomColor
   } = useProjectStore();
@@ -591,6 +649,17 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
         setIsLoadingFonts(false);
       });
   }, []);
+
+  useEffect(() => {
+    fetch('/api/custom-colors?t=' + Date.now())
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.colors) && data.colors.length > 0) {
+          setCustomColors(data.colors);
+        }
+      })
+      .catch(() => {});
+  }, [setCustomColors]);
 
   const handleUpdate = (updates: Partial<StyleConfig>) => {
     if (isEditingIndividual) {
@@ -1935,6 +2004,9 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
             <button 
               className="w-full text-left p-3 rounded-lg bg-red-900/30 border border-red-800/50 hover:bg-red-900/50 transition flex flex-col gap-1"
               onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('reset-all-settings'));
+                }
                 fetch('/api/project-state', { method: 'DELETE' }).catch(() => {});
                 setStyleConfig(defaultStyle);
                 setCaptions(captions.map(c => ({ 

@@ -133,6 +133,7 @@ interface ProjectState {
   importCustomPresets: (presets: CustomPreset[]) => void;
 
   customColors: string[];
+  setCustomColors: (colors: string[]) => void;
   addCustomColor: (color: string) => void;
   removeCustomColor: (color: string) => void;
 
@@ -282,16 +283,55 @@ export const useProjectStore = create<ProjectState>()(
     return { customPresets: newPresets };
   }),
 
-  customColors: [],
+  customColors: (() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('autocap_custom_colors');
+        if (stored) return JSON.parse(stored);
+      } catch (_) {}
+    }
+    return [];
+  })(),
+
+  setCustomColors: (colors) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('autocap_custom_colors', JSON.stringify(colors));
+      } catch (_) {}
+    }
+    set({ customColors: colors });
+  },
   
   addCustomColor: (color) => set((state) => {
     if (state.customColors.includes(color)) return state;
-    return { customColors: [...state.customColors, color] };
+    const newColors = [...state.customColors, color];
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('autocap_custom_colors', JSON.stringify(newColors));
+      } catch (_) {}
+      fetch('/api/custom-colors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ colors: newColors }),
+      }).catch(() => {});
+    }
+    return { customColors: newColors };
   }),
   
-  removeCustomColor: (color) => set((state) => ({
-    customColors: state.customColors.filter(c => c !== color)
-  })),
+  removeCustomColor: (color) => set((state) => {
+    const newColors = state.customColors.filter(c => c !== color);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('autocap_custom_colors', JSON.stringify(newColors));
+      } catch (_) {}
+      fetch('/api/custom-colors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ colors: newColors }),
+      }).catch(() => {});
+    }
+    return { customColors: newColors };
+  }),
 
   undo: () => set((state) => {
     if (state.pastCaptions.length === 0) return state;

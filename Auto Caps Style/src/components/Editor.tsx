@@ -8,7 +8,7 @@ import { CaptionComposition } from '@/remotion/CaptionComposition';
 import { parseSrt } from '@/lib/srtParser';
 import { StylePanel, CustomCheckbox } from './StylePanel';
 import { PromoBanner } from './PromoBanner';
-import { Undo, Redo, Wand2, Repeat, RefreshCcw, Edit2, Check, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, AlertTriangle, BookOpen, Eraser } from 'lucide-react';
+import { ChevronDown, ChevronUp, Undo, Redo, Wand2, Repeat, RefreshCcw, Edit2, Check, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, AlertTriangle, BookOpen, Eraser } from 'lucide-react';
 
 export const Editor: React.FC = () => {
   const { videoUrl, captions, styleConfig, fps, videoDuration, undo, redo, pastCaptions, futureCaptions, individualStylingEnabled, selectedCaptionId, isCaptionOutOfBounds, hasHydrated, projectName } = useProjectStore();
@@ -21,12 +21,46 @@ export const Editor: React.FC = () => {
   const setStyleConfig = useProjectStore((state) => state.setStyleConfig);
   const customPresets = useProjectStore((state) => state.customPresets);
   const customColors = useProjectStore((state) => state.customColors);
+  const setCustomColors = useProjectStore((state) => state.setCustomColors);
 
   const highlightSimilar = useProjectStore((state) => state.highlightSimilar);
   const setHighlightSimilar = useProjectStore((state) => state.setHighlightSimilar);
   const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
   const [editingCaptionText, setEditingCaptionText] = useState('');
-  const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
+  const [isControlsCollapsed, setIsControlsCollapsed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('autocap_captions_controls_collapsed') === 'true';
+      } catch (_) {}
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleResetAll = () => {
+      setIsControlsCollapsed(false);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem('autocap_captions_controls_collapsed');
+        } catch (_) {}
+      }
+    };
+    window.addEventListener('reset-all-settings', handleResetAll);
+    return () => window.removeEventListener('reset-all-settings', handleResetAll);
+  }, []);
+
+  const toggleControlsCollapsed = () => {
+    setIsControlsCollapsed((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('autocap_captions_controls_collapsed', String(next));
+        } catch (_) {}
+      }
+      return next;
+    });
+  };
+    const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isMemoryBoxOpen, setIsMemoryBoxOpen] = useState(false);
 
@@ -328,6 +362,9 @@ export const Editor: React.FC = () => {
         if (res.ok) {
           const json = await res.json();
           if (json.exists && json.data) {
+                        if (Array.isArray(json.data.customColors) && json.data.customColors.length > 0) {
+              setCustomColors(json.data.customColors);
+            }
             if (json.data.styleConfig) {
               setStyleConfig(json.data.styleConfig);
             }
@@ -391,7 +428,8 @@ export const Editor: React.FC = () => {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
-  }, [styleConfig, captions, customPresets, customColors, projectName]);
+  }, [styleConfig, captions, customPresets, customColors,
+    setCustomColors, projectName]);
 
   const handleOpenFolder = async () => {
     try {
@@ -590,10 +628,20 @@ export const Editor: React.FC = () => {
             </button>
           </div>
 
-        {/* Caption List */}
-        <div className="flex-1 p-2.5 lg:p-3.5 overflow-y-auto min-h-0">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-sm font-bold text-white tracking-wide">Captions</h2>
+        {/* Fixed Locked Controls Header with Collapse Button */}
+        <div className="flex-shrink-0 p-2.5 lg:p-3.5 pb-2.5 border-b border-[#2b2b34]/80 bg-[#18181c]">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={toggleControlsCollapsed}
+              className="flex items-center gap-1.5 text-left group cursor-pointer focus:outline-none select-none py-0.5"
+              title={isControlsCollapsed ? "Expand Options" : "Collapse Options"}
+            >
+              <h2 className="text-sm font-bold text-white tracking-wide group-hover:text-blue-400 transition-colors">Captions</h2>
+              <div className="p-0.5 rounded text-gray-400 group-hover:text-white group-hover:bg-[#282830] transition">
+                {isControlsCollapsed ? <ChevronDown className="w-3.5 h-3.5 text-blue-400" /> : <ChevronUp className="w-3.5 h-3.5" />}
+              </div>
+            </button>
+
             <div className="flex gap-1.5 items-center">
               <button 
                 onClick={(e) => {
@@ -601,7 +649,7 @@ export const Editor: React.FC = () => {
                   e.stopPropagation();
                   setIsMemoryBoxOpen(true);
                 }}
-                className="flex items-center gap-1 px-2.5 py-1 bg-[#282832] hover:bg-[#343440] border border-[#383844] rounded-lg text-xs font-semibold text-gray-200 transition"
+                className="flex items-center gap-1 px-2 py-1 bg-[#282832] hover:bg-[#343440] border border-[#383844] rounded-lg text-xs font-semibold text-gray-200 transition"
                 title="View Memory Box (Highlighted Text)"
               >
                 <BookOpen className="w-3 h-3 text-blue-400" /> Memory Box
@@ -626,37 +674,42 @@ export const Editor: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex flex-col gap-2 mb-3">
-            <div className="bg-[#212126] hover:bg-[#282830] p-2.5 rounded-xl border border-[#2e2e38] transition">
-              <CustomCheckbox
-                checked={highlightSimilar}
-                onChange={setHighlightSimilar}
-                label="Select similar words automatically"
-              />
-            </div>
+          {!isControlsCollapsed && (
+            <div className="flex flex-col gap-2 mt-2.5 transition-all">
+              <div className="bg-[#212126] hover:bg-[#282830] p-2.5 rounded-xl border border-[#2e2e38] transition">
+                <CustomCheckbox
+                  checked={highlightSimilar}
+                  onChange={setHighlightSimilar}
+                  label="Select similar words automatically"
+                />
+              </div>
 
-            <div className="flex justify-between items-center bg-[#212126] p-2.5 rounded-xl border border-[#2e2e38]">
-              <span className="text-xs font-semibold text-gray-300">Individual Styles</span>
-              <button 
-                onClick={() => {
-                  setIndividualStylingEnabled(!individualStylingEnabled);
-                  if (individualStylingEnabled) setSelectedCaptionId(null);
-                }}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${individualStylingEnabled ? 'bg-blue-600' : 'bg-gray-700'}`}
+              <div className="flex justify-between items-center bg-[#212126] p-2.5 rounded-xl border border-[#2e2e38]">
+                <span className="text-xs font-semibold text-gray-300">Individual Styles</span>
+                <button 
+                  onClick={() => {
+                    setIndividualStylingEnabled(!individualStylingEnabled);
+                    if (individualStylingEnabled) setSelectedCaptionId(null);
+                  }}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${individualStylingEnabled ? 'bg-blue-600' : 'bg-gray-700'}`}
+                >
+                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${individualStylingEnabled ? 'translate-x-4' : 'translate-x-1'}`} />
+                </button>
+              </div>
+              
+              <button
+                onClick={() => setConfirmAction({ type: 'reload', open: true })}
+                className="mt-0.5 w-full flex items-center justify-center gap-2 bg-blue-600/15 hover:bg-blue-600/25 text-blue-400 py-2 rounded-xl border border-blue-500/30 transition text-xs font-semibold"
               >
-                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${individualStylingEnabled ? 'translate-x-4' : 'translate-x-1'}`} />
+                <RefreshCcw className="w-3.5 h-3.5" />
+                Re-Analyze Timeline Caption
               </button>
             </div>
-            
-            <button
-              onClick={() => setConfirmAction({ type: 'reload', open: true })}
-              className="mt-1 w-full flex items-center justify-center gap-2 bg-blue-600/15 hover:bg-blue-600/25 text-blue-400 py-2 rounded-xl border border-blue-500/30 transition text-xs font-semibold"
-            >
-              <RefreshCcw className="w-3.5 h-3.5" />
-              Re-Analyze Timeline Caption
-            </button>
-          </div>
-          
+          )}
+        </div>
+
+        {/* Scrollable Caption List Only */}
+        <div className="flex-1 p-2.5 lg:p-3.5 overflow-y-auto min-h-0">
           <div className="space-y-2">
             {captions.map((cap) => {
               const isSelected = individualStylingEnabled && selectedCaptionId === cap.id;
