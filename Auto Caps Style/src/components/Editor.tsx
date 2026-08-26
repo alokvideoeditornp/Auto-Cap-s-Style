@@ -8,7 +8,7 @@ import { CaptionComposition } from '@/remotion/CaptionComposition';
 import { parseSrt } from '@/lib/srtParser';
 import { StylePanel, CustomCheckbox } from './StylePanel';
 import { PromoBanner } from './PromoBanner';
-import { Sparkles, Download, ChevronDown, ChevronUp, Undo, Redo, Wand2, Repeat, RefreshCcw, Edit2, Check, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, AlertTriangle, BookOpen, Eraser } from 'lucide-react';
+import { Sparkles, Download, Loader2, CheckCircle, ChevronDown, ChevronUp, Undo, Redo, Wand2, Repeat, RefreshCcw, Edit2, Check, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, AlertTriangle, BookOpen, Eraser } from 'lucide-react';
 
 export const Editor: React.FC = () => {
   const { videoUrl, captions, styleConfig, fps, videoDuration, undo, redo, pastCaptions, futureCaptions, individualStylingEnabled, selectedCaptionId, isCaptionOutOfBounds, hasHydrated, projectName } = useProjectStore();
@@ -68,6 +68,9 @@ export const Editor: React.FC = () => {
     changelog?: string;
   } | null>(null);
   const [isUpdateDismissed, setIsUpdateDismissed] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'installing' | 'success' | 'error'>('idle');
+  const [updateErrorMessage, setUpdateErrorMessage] = useState('');
 
   useEffect(() => {
     fetch('/api/check-update?t=' + Date.now())
@@ -79,6 +82,42 @@ export const Editor: React.FC = () => {
       })
       .catch(() => {});
   }, []);
+
+  const handleApplyUpdate = async () => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    setUpdateStatus('installing');
+    setUpdateErrorMessage('');
+
+    try {
+      const res = await fetch('/api/apply-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: updateInfo?.downloadUrl }),
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setUpdateStatus('success');
+      } else {
+        setUpdateStatus('error');
+        setUpdateErrorMessage(data?.error || 'Failed to replace files.');
+      }
+    } catch (err: any) {
+      setUpdateStatus('error');
+      setUpdateErrorMessage(err?.message || 'Update failed.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleRestartPlugin = async () => {
+    try {
+      await fetch('/api/restart', { method: 'POST' });
+    } catch (_) {}
+    setTimeout(() => {
+      window.location.reload();
+    }, 1200);
+  };
   const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [isMemoryBoxOpen, setIsMemoryBoxOpen] = useState(false);
@@ -621,53 +660,90 @@ export const Editor: React.FC = () => {
 
   return (
     <div className="flex flex-row h-screen overflow-hidden bg-[#141416] text-[#e5e7eb] p-3 lg:p-4 gap-3 lg:gap-4 relative font-sans">
-      {/* Automatic GitHub New Version Popup Banner */}
+      {/* Automatic GitHub New Version In-App 1-Click Update Banner */}
       {updateInfo?.hasUpdate && !isUpdateDismissed && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[99999] max-w-xl w-[92%] sm:w-auto animate-in fade-in slide-in-from-top-4 duration-300 select-none">
           <div className="bg-[#1c1c24]/95 border border-blue-500/50 shadow-[0_10px_35px_rgba(37,99,235,0.3)] backdrop-blur-md rounded-2xl px-4 py-2.5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${
+                updateStatus === 'success'
+                  ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
+                  : 'bg-blue-500/20 border-blue-500/30 text-blue-400'
+              }`}>
+                {updateStatus === 'installing' ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                ) : updateStatus === 'success' ? (
+                  <CheckCircle className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Sparkles className="w-4 h-4 animate-pulse" />
+                )}
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-white tracking-wide">
-                    New Update Available!
+                    {updateStatus === 'installing'
+                      ? 'Downloading & Installing Update...'
+                      : updateStatus === 'success'
+                        ? 'Update Installed Successfully!'
+                        : 'New Update Available!'}
                   </span>
                   <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm">
                     v{updateInfo.latestVersion}
                   </span>
                 </div>
                 <span className="text-[11px] text-gray-400">
-                  Current: v{updateInfo.currentVersion} • A new version is ready on GitHub
+                  {updateStatus === 'installing'
+                    ? 'Replacing files in background... please wait'
+                    : updateStatus === 'success'
+                      ? 'Restart the plugin to run the new version'
+                      : updateStatus === 'error'
+                        ? `Error: ${updateErrorMessage || 'Please check internet and try again'}`
+                        : `Current: v${updateInfo.currentVersion} • 1-click automatic update`}
                 </span>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  fetch('/api/open-external', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: updateInfo.downloadUrl || 'https://github.com/alokvideoeditornp/Auto-Cap-s-Style' }),
-                  }).catch(() => {});
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-600/30 shrink-0 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Update Now
-              </button>
+              {updateStatus === 'success' ? (
+                <button
+                  type="button"
+                  onClick={handleRestartPlugin}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-emerald-600/30 shrink-0 cursor-pointer"
+                >
+                  <RefreshCcw className="w-3.5 h-3.5" />
+                  Restart Now
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleApplyUpdate}
+                  disabled={isUpdating}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-blue-600/30 shrink-0 cursor-pointer"
+                >
+                  {isUpdating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3.5 h-3.5" />
+                      Update Now
+                    </>
+                  )}
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setIsUpdateDismissed(true)}
-                className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition shrink-0 cursor-pointer"
-                title="Dismiss"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              {!isUpdating && (
+                <button
+                  type="button"
+                  onClick={() => setIsUpdateDismissed(true)}
+                  className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition shrink-0 cursor-pointer"
+                  title="Dismiss"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         </div>
