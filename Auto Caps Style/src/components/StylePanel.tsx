@@ -1433,23 +1433,24 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
                 {mode.charAt(0).toUpperCase() + mode.slice(1)}
               </button>
             ))}
-            {(['karaoke', 'karaoke-cumulative'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => {
-                  handleUpdate({ displayMode: mode, staggerSpeedMode: 'math' });
-                }}
-                className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
-                  mode === 'karaoke' ? 'col-span-1' : 'col-span-2'
-                } ${
-                  styleConfig.displayMode === mode
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                    : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
-                }`}
-              >
-                {mode === 'karaoke-cumulative' ? 'Karaoke+ (Sync)' : 'Karaoke'}
-              </button>
-            ))}
+            <div className="col-span-3 grid grid-cols-2 gap-1.5 mt-0.5">
+              {(['karaoke', 'karaoke-cumulative'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => {
+                    handleUpdate({ displayMode: mode, staggerSpeedMode: 'math' });
+                  }}
+                  className={`py-2 text-xs font-semibold rounded-lg transition-all text-center ${
+                    styleConfig.displayMode === mode
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                      : 'text-gray-400 hover:text-white hover:bg-[#212126]/60'
+                  }`}
+                  title={mode === 'karaoke-cumulative' ? 'Words fill and stay highlighted as spoken' : 'Highlights one active word at a time'}
+                >
+                  {mode === 'karaoke-cumulative' ? 'Color Fill' : 'Karaoke'}
+                </button>
+              ))}
+            </div>
           </div>
 
           {styleConfig.displayMode !== 'line' && (
