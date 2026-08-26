@@ -7,17 +7,42 @@ import util from 'util';
 
 const execPromise = util.promisify(exec);
 
+function findFrontendDir(dir: string, depth = 0): string | null {
+  if (depth > 4) return null;
+  try {
+    if (fs.existsSync(path.join(dir, 'package.json')) && fs.existsSync(path.join(dir, 'src'))) {
+      return dir;
+    }
+    const entries = fs.readdirSync(dir);
+    for (const entry of entries) {
+      const full = path.join(dir, entry);
+      try {
+        if (fs.statSync(full).isDirectory()) {
+          const found = findFrontendDir(full, depth + 1);
+          if (found) return found;
+        }
+      } catch (_) {}
+    }
+  } catch (_) {}
+  return null;
+}
+
 export async function POST(req: Request) {
   const tempDir = path.join(os.tmpdir(), `autocap_update_${Date.now()}`);
   try {
     const body = await req.json().catch(() => ({}));
-    const repoZipUrl = body.url || 'https://github.com/alokvideoeditornp/Auto-Cap-s-Style/archive/refs/heads/main.zip';
+    let repoZipUrl = (body?.url || '').trim();
+
+    // Ensure it always downloads the ZIP archive and not an HTML page
+    if (!repoZipUrl || !repoZipUrl.endsWith('.zip')) {
+      repoZipUrl = 'https://github.com/alokvideoeditornp/Auto-Cap-s-Style/archive/refs/heads/main.zip';
+    }
 
     fs.mkdirSync(tempDir, { recursive: true });
     const zipPath = path.join(tempDir, 'update.zip');
     const extractPath = path.join(tempDir, 'extracted');
 
-    // 1. Download latest archive from GitHub
+    // 1. Download latest zip from GitHub
     const res = await fetch(repoZipUrl, {
       headers: {
         'User-Agent': 'AutoCapsStyle-AutoUpdater',
@@ -35,27 +60,15 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(await res.arrayBuffer());
     fs.writeFileSync(zipPath, buffer);
 
-    // 2. Extract Archive
+    // 2. Extract Archive safely
     if (process.platform === 'win32') {
       await execPromise(`powershell -NoProfile -Command "Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${extractPath}' -Force"`);
     } else {
       await execPromise(`unzip -o "${zipPath}" -d "${extractPath}"`);
     }
 
-    // 3. Locate source directory inside extracted folder
-    let sourceDir = '';
-    const extractedEntries = fs.readdirSync(extractPath);
-    for (const entry of extractedEntries) {
-      const candidate1 = path.join(extractPath, entry, 'Auto Caps Style');
-      const candidate2 = path.join(extractPath, entry);
-      if (fs.existsSync(path.join(candidate1, 'package.json'))) {
-        sourceDir = candidate1;
-        break;
-      } else if (fs.existsSync(path.join(candidate2, 'package.json'))) {
-        sourceDir = candidate2;
-        break;
-      }
-    }
+    // 3. Find frontend source directory containing package.json & src
+    const sourceDir = findFrontendDir(extractPath);
 
     if (!sourceDir) {
       return NextResponse.json(
@@ -66,12 +79,12 @@ export async function POST(req: Request) {
 
     const targetDir = process.cwd();
 
-    // 4. Recursive replace files, strictly protecting data/ (colors, presets, settings) & node_modules
+    // 4. Recursive replace files, strictly preserving data/ and NEVER touching .lua files
     function copyRecursive(src: string, dest: string) {
       const items = fs.readdirSync(src);
       for (const item of items) {
-        if (item === 'node_modules' || item === 'data' || item === '.next' || item === '.git') {
-          continue; // Protected user data & dependencies
+        if (item === 'node_modules' || item === 'data' || item === '.next' || item === '.git' || item.endsWith('.lua')) {
+          continue; // Strict protection of user data and .lua files!
         }
         const srcItem = path.join(src, item);
         const destItem = path.join(dest, item);
@@ -90,7 +103,7 @@ export async function POST(req: Request) {
 
     copyRecursive(sourceDir, targetDir);
 
-    // 5. Compile production build in targetDir
+    // 5. Recompile production build in targetDir
     try {
       const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
       await execPromise(`"${npmCmd}" run build`, { cwd: targetDir, timeout: 180000 });
