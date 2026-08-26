@@ -829,7 +829,7 @@ export const Editor: React.FC = () => {
                   <span className="text-blue-500">Auto Cap&apos;s</span> Style
                 </h1>
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 tracking-normal">
-                  {updateInfo?.currentVersion ? `v${updateInfo.currentVersion}` : 'v1.0.2'}
+                  {updateInfo?.currentVersion ? `v${updateInfo.currentVersion}` : 'v1.0.1'}
                 </span>
               </div>
               <span className="text-[10px] font-semibold text-blue-400/90 tracking-wider">
