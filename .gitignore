@@ -1,0 +1,21 @@
+# Node dependencies & Next.js builds
+node_modules/
+.next/
+out/
+build/
+.render-cache/
+.remotion-bundle/
+
+# User video and caption files
+*.mov
+*.mp4
+*.srt
+*.vtt
+public/renders/
+public/temp/
+public/videos/
+temp/
+
+# Logs & temp
+*.log
+.DS_Store

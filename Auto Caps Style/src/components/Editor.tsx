@@ -155,6 +155,7 @@ export const Editor: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
+    fetch('/api/render?prewarm=true').catch(() => {});
     fetch('/api/storage')
       .then(res => res.json())
       .then(data => {
@@ -309,38 +310,50 @@ export const Editor: React.FC = () => {
   // only fires once (on hydration) and not every time captions change.
   const loadFromTimeline = useCallback((forceReload = false) => {
     fetch('/auto.srt?t=' + Date.now()) // cache bust
-      .then(res => res.text())
+      .then(res => {
+        if (!res.ok) {
+          setCaptions([]);
+          return '';
+        }
+        return res.text();
+      })
       .then(text => {
         if (text && text.trim().length > 0) {
            const parsed = parseSrt(text);
            if (parsed && parsed.length > 0) {
              const currentCaptions = captionsRef.current;
-             // If user already has saved customizations in history and this is not a forced reload, preserve them!
-             if (!forceReload && currentCaptions && currentCaptions.length > 0) {
-               window.history.replaceState({}, '', window.location.pathname);
-               return;
-             }
              
-             const merged = parsed.map(newCap => {
-               const oldCap = currentCaptions ? currentCaptions.find(c =>
-                 c.id === newCap.id || Math.abs(c.startTime - newCap.startTime) < 1000
-               ) : undefined;
-               if (oldCap) {
-                 return {
-                   ...newCap,
-                   highlightedWords: oldCap.highlightedWords || [],
-                   highlightedIndices: oldCap.highlightedIndices || [],
-                   customStyle: oldCap.customStyle
-                 };
-               }
-               return newCap;
-             });
-             setCaptions(merged);
+             if (forceReload || !currentCaptions || currentCaptions.length === 0) {
+               setCaptions(parsed);
+             } else {
+               const merged = parsed.map(newCap => {
+                 const oldCap = currentCaptions.find(c =>
+                   c.id === newCap.id || Math.abs(c.startTime - newCap.startTime) < 1000
+                 );
+                 if (oldCap) {
+                   return {
+                     ...newCap,
+                     highlightedWords: oldCap.highlightedWords || [],
+                     highlightedIndices: oldCap.highlightedIndices || [],
+                     customStyle: oldCap.customStyle
+                   };
+                 }
+                 return newCap;
+               });
+               setCaptions(merged);
+             }
              window.history.replaceState({}, '', window.location.pathname);
+             return;
            }
         }
+        // If auto.srt is empty or timeline has no captions:
+        setCaptions([]);
+        window.history.replaceState({}, '', window.location.pathname);
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error('Failed to load auto.srt:', err);
+        setCaptions([]);
+      });
   }, [setCaptions]);
 
   useEffect(() => {
@@ -357,11 +370,20 @@ export const Editor: React.FC = () => {
       setVideoData(videoUrl || '', videoDuration || 0, parseFloat(fpsParam));
     }
     
-    // Only fetch fresh if captions are completely empty or user requested force reload
-    if (captions.length === 0 || isForceReload) {
-      loadFromTimeline(isForceReload);
-    }
-  }, [hasHydrated, setVideoData, setProjectName, videoUrl, videoDuration, captions.length, loadFromTimeline]);
+    // Always auto-analyze fresh timeline captions from auto.srt on launch!
+    loadFromTimeline(isForceReload);
+
+    const handleFocusOrHash = () => {
+      loadFromTimeline(false);
+    };
+
+    window.addEventListener('focus', handleFocusOrHash);
+    window.addEventListener('hashchange', handleFocusOrHash);
+    return () => {
+      window.removeEventListener('focus', handleFocusOrHash);
+      window.removeEventListener('hashchange', handleFocusOrHash);
+    };
+  }, [hasHydrated, setVideoData, setProjectName, videoUrl, videoDuration, loadFromTimeline]);
 
   const maxCanvasTime = captions.length > 0 ? captions[captions.length - 1].endTime : 0;
   
@@ -387,6 +409,8 @@ export const Editor: React.FC = () => {
 
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState(0);
+  const [cacheStatus, setCacheStatus] = useState<'idle' | 'caching' | 'ready'>('idle');
+  const [cacheProgress, setCacheProgress] = useState<number>(0);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [isLooping, setIsLooping] = useState(true);
@@ -425,6 +449,8 @@ export const Editor: React.FC = () => {
 
   useEffect(() => {
     setTimeout(() => setIsClient(true), 0);
+    // Pre-warm the Remotion render bundle silently in background
+    fetch('/api/render?prewarm=true').catch(() => {});
   }, []);
 
   
@@ -446,23 +472,8 @@ export const Editor: React.FC = () => {
             if (json.data.styleConfig) {
               setStyleConfig(json.data.styleConfig);
             }
-            if (Array.isArray(json.data.captions) && json.data.captions.length > 0) {
-              let loadedCaps = json.data.captions;
-              if (loadedCaps.length > 0 && (loadedCaps[0].startTime >= 3500000 || loadedCaps[0].startTime >= 3600000)) {
-                const offset = Math.floor(loadedCaps[0].startTime / 3600000) * 3600000;
-                loadedCaps = loadedCaps.map((c: any) => {
-                  const s = Math.max(0, c.startTime - offset);
-                  const e = Math.max(s + 100, c.endTime - offset);
-                  return { ...c, startTime: s, endTime: e };
-                });
-                if (loadedCaps[0].startTime < 333) {
-                  loadedCaps[0].startTime = 333;
-                  if (loadedCaps[0].endTime <= 333) loadedCaps[0].endTime = 1333;
-                }
-              }
-              setCaptions(loadedCaps);
-            }
             isInitialLoadDone.current = true;
+            loadFromTimeline(false);
             return;
           }
         }
@@ -470,14 +481,12 @@ export const Editor: React.FC = () => {
         console.error('Failed to load server state:', err);
       } finally {
         isInitialLoadDone.current = true;
-        if (captions.length === 0) {
-          loadFromTimeline(false);
-        }
+        loadFromTimeline(false);
       }
     };
 
     loadSavedState();
-  }, []);
+  }, [loadFromTimeline, setCustomColors, setStyleConfig]);
 
   // 2. Debounced Auto-Save to Disk whenever State Changes
   useEffect(() => {
@@ -509,6 +518,105 @@ export const Editor: React.FC = () => {
   }, [styleConfig, captions, customPresets, customColors,
     setCustomColors, projectName]);
 
+  // ── Smart Background Render Auto-Caching ───────────────────────────────────
+  const preRenderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cachePollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCachedPropsHashRef = useRef<string>('');
+
+  useEffect(() => {
+    if (!hasHydrated || captions.length === 0) {
+      if (captions.length === 0) {
+        setCacheStatus('idle');
+        setCacheProgress(0);
+        lastCachedPropsHashRef.current = '';
+      }
+      return;
+    }
+
+    if (isRendering) return;
+
+    const currentHash = JSON.stringify({ captions, styleConfig, fps, videoUrl, projectName });
+    if (lastCachedPropsHashRef.current === currentHash) {
+      return;
+    }
+
+    if (preRenderTimeoutRef.current) {
+      clearTimeout(preRenderTimeoutRef.current);
+    }
+    if (cachePollIntervalRef.current) {
+      clearInterval(cachePollIntervalRef.current);
+    }
+
+    setCacheStatus('caching');
+    setCacheProgress(0);
+
+    // Debounce 200ms after user finishes making style or text changes
+    preRenderTimeoutRef.current = setTimeout(async () => {
+      try {
+        setCacheProgress(10);
+        const res = await fetch('/api/render', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            inputProps: {
+              videoUrl,
+              captions,
+              styleConfig,
+              fps,
+            },
+            projectName: projectName || "Auto Cap's Style",
+            isPreRender: true,
+          }),
+        });
+        const data = await res.json();
+        if (data.cacheKey) {
+          if (data.status === 'ready' || data.cached) {
+            setCacheStatus('ready');
+            setCacheProgress(100);
+            lastCachedPropsHashRef.current = currentHash;
+            return;
+          }
+
+          if (data.progress !== undefined) {
+            setCacheProgress(Math.max(15, data.progress));
+            setCacheStatus('caching');
+          }
+
+          // Poll cache progress
+          if (cachePollIntervalRef.current) clearInterval(cachePollIntervalRef.current);
+          cachePollIntervalRef.current = setInterval(async () => {
+            try {
+              const checkRes = await fetch(`/api/render?checkCacheKey=${data.cacheKey}`);
+              const checkData = await checkRes.json();
+              if (checkData.status === 'ready' || checkData.cached || (typeof checkData.progress === 'number' && checkData.progress >= 100)) {
+                setCacheStatus('ready');
+                setCacheProgress(100);
+                lastCachedPropsHashRef.current = currentHash;
+                if (cachePollIntervalRef.current) clearInterval(cachePollIntervalRef.current);
+              } else if (checkData.status === 'caching') {
+                setCacheStatus('caching');
+                if (typeof checkData.progress === 'number') {
+                  setCacheProgress(checkData.progress);
+                }
+              } else if (checkData.status === 'failed') {
+                if (cachePollIntervalRef.current) clearInterval(cachePollIntervalRef.current);
+                setCacheStatus('idle');
+                setCacheProgress(0);
+              }
+            } catch (_) {}
+          }, 250);
+        }
+      } catch (err) {
+        console.error('Pre-render error:', err);
+      }
+    }, 200);
+
+    return () => {
+      if (preRenderTimeoutRef.current) clearTimeout(preRenderTimeoutRef.current);
+      if (cachePollIntervalRef.current) clearInterval(cachePollIntervalRef.current);
+    };
+  }, [captions, styleConfig, fps, videoUrl, projectName, hasHydrated, isRendering]);
+
   const handleOpenFolder = async () => {
     try {
       await fetch('/api/open-folder', {
@@ -524,10 +632,16 @@ export const Editor: React.FC = () => {
   const handleRender = async () => {
     if (typeof window !== 'undefined' && (window as any).gtag) { (window as any).gtag('event', 'render_start', { format: styleConfig.aspectRatio }); }
     if (captions.length === 0) return;
+    
+    const isAlreadyCached = (cacheStatus === 'ready' && cacheProgress === 100);
+    const initialProgress = isAlreadyCached ? 100 : Math.max(0, cacheProgress);
+    
     setIsRendering(true);
-    setRenderProgress(0);
+    setRenderProgress(initialProgress);
     setDownloadUrl(null);
     playerRef.current?.pause();
+
+    const currentHash = JSON.stringify({ captions, styleConfig, fps, videoUrl, projectName });
 
     try {
       const res = await fetch('/api/render', {
@@ -545,6 +659,21 @@ export const Editor: React.FC = () => {
       });
       const data = await res.json();
       if (data.jobId) {
+        if (data.cached) {
+          // Instant cache hit: immediately complete!
+          setRenderProgress(100);
+          const jobRes = await fetch(`/api/render?jobId=${data.jobId}`);
+          const jobData = await jobRes.json();
+          setIsRendering(false);
+          lastCachedPropsHashRef.current = currentHash;
+          setCacheStatus('ready');
+          setCacheProgress(100);
+          if (jobData.url) {
+            setDownloadUrl(jobData.url);
+            window.location.hash = `importMediaPool=${jobData.url}`;
+          }
+          return;
+        }
         pollStatus(data.jobId);
       } else {
         console.error('Render API Error:', data.error);
@@ -567,11 +696,15 @@ export const Editor: React.FC = () => {
         const res = await fetch(`/api/render?jobId=${jobId}`);
         const data = await res.json();
         if (data.status === 'processing') {
-          setRenderProgress(data.progress);
+          setRenderProgress((prev) => Math.max(prev, data.progress ?? 10));
         } else if (data.status === 'done') {
           setRenderProgress(100);
           setDownloadUrl(data.url);
           setIsRendering(false);
+          const currentHash = JSON.stringify({ captions, styleConfig, fps, videoUrl, projectName });
+          lastCachedPropsHashRef.current = currentHash;
+          setCacheStatus('ready');
+          setCacheProgress(100);
           if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
           window.location.hash = `importMediaPool=${data.url}`;
         } else if (data.status === 'failed') {
@@ -582,7 +715,7 @@ export const Editor: React.FC = () => {
       } catch (err) {
         console.error('Poll error:', err);
       }
-    }, 2000);
+    }, 300);
   };
 
   // Anti-Inspection & Security Lockdown
@@ -822,19 +955,23 @@ export const Editor: React.FC = () => {
       {isLeftPanelOpen && (
         <div className="w-[260px] lg:w-[280px] xl:w-[340px] 2xl:w-[400px] flex-shrink-0 bg-[#18181c] border border-[#2b2b34] flex flex-col rounded-2xl relative z-10 h-full shadow-2xl transition-all duration-200 overflow-hidden">
           {/* Watermark and Toggle */}
-          <div className="px-4 py-3 flex justify-between items-center flex-shrink-0 border-b border-[#2b2b34]/80">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <h1 className="text-white text-xs font-extrabold tracking-[0.18em] font-sans select-none uppercase flex items-center gap-1.5">
-                  <span className="text-blue-500">Auto Cap&apos;s</span> Style
-                </h1>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 tracking-normal">
-                  {updateInfo?.currentVersion ? `v${updateInfo.currentVersion}` : 'v1.0.1'}
+          {/* Watermark and Toggle */}
+          <div className="px-4 py-2.5 flex justify-between items-center flex-shrink-0 border-b border-[#2b2b34]/80 bg-[#18181c]">
+            <div className="flex items-center gap-2.5">
+              <img src="/logo.png" alt="Logo" className="w-7 h-7 rounded-lg shadow-md shadow-blue-900/30 object-contain" />
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <h1 className="text-white text-xs font-extrabold tracking-[0.18em] font-sans select-none uppercase flex items-center gap-1.5">
+                    <span className="text-blue-500">Auto Cap&apos;s</span> Style
+                  </h1>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 tracking-normal">
+                    {updateInfo?.currentVersion ? `v${updateInfo.currentVersion}` : 'v1.0.2'}
+                  </span>
+                </div>
+                <span className="text-[10px] font-semibold text-blue-400/90 tracking-wider">
+                  Alok Video Editor
                 </span>
               </div>
-              <span className="text-[10px] font-semibold text-blue-400/90 tracking-wider">
-                Alok Video Editor
-              </span>
             </div>
             <button onClick={handleCloseLeftPanel} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
               <PanelLeftClose className="w-4 h-4" />
@@ -923,8 +1060,17 @@ export const Editor: React.FC = () => {
 
         {/* Scrollable Caption List Only */}
         <div className="flex-1 p-2.5 lg:p-3.5 overflow-y-auto min-h-0">
-          <div className="space-y-2">
-            {captions.map((cap) => {
+          {captions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 text-center p-4 border border-dashed border-[#2b2b34] rounded-2xl bg-[#141416]/50">
+              <AlertTriangle className="w-8 h-8 text-gray-500 mb-2 opacity-60" />
+              <p className="text-xs font-semibold text-gray-300">No Timeline Captions Found</p>
+              <p className="text-[11px] text-gray-500 mt-1 max-w-[220px]">
+                Create a subtitle track on your DaVinci Resolve timeline, then click &quot;Re-Analyze Timeline Caption&quot;.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {captions.map((cap) => {
               const isSelected = individualStylingEnabled && selectedCaptionId === cap.id;
               const hasCustomStyle = !!cap.customStyle && Object.keys(cap.customStyle).length > 0;
               
@@ -1044,13 +1190,8 @@ export const Editor: React.FC = () => {
               </div>
               );
             })}
-            {captions.length === 0 && (
-              <div className="text-xs text-gray-500 text-center py-8">
-                Upload an SRT file to see captions here.
-              </div>
-            )}
           </div>
-
+        )}
         </div>
 
         {/* Pinned Bottom Action Bar & Promo Banner (DOES NOT SCROLL) */}
@@ -1060,7 +1201,7 @@ export const Editor: React.FC = () => {
             disabled={captions.length === 0 || isRendering}
             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-blue-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-wider"
           >
-            {isRendering ? `Rendering... ${renderProgress}%` : 'Render Final Video'}
+            {isRendering ? `Rendering... ${renderProgress}%` : (cacheStatus === 'ready' ? '⚡ Render Final Video (Instant)' : 'Render Final Video')}
           </button>
           
           <button 
@@ -1149,17 +1290,51 @@ export const Editor: React.FC = () => {
                   overflow: 'hidden',
                 }}
               />
-              <button
-                onClick={() => setIsLooping(!isLooping)}
-                className={`mt-4 flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  isLooping 
-                    ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-600/30' 
-                    : 'bg-[#212126] border-[#2e2e38] text-gray-400 hover:text-white hover:bg-[#282830]'
-                }`}
-              >
-                <Repeat className="w-3.5 h-3.5" />
-                {isLooping ? 'Auto-Loop: ON' : 'Auto-Loop: OFF'}
-              </button>
+              <div className="mt-4 flex items-center justify-center gap-2.5 flex-wrap z-10">
+                <button
+                  onClick={() => setIsLooping(!isLooping)}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                    isLooping 
+                      ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-600/30' 
+                      : 'bg-[#212126] border-[#2e2e38] text-gray-400 hover:text-white hover:bg-[#282830]'
+                  }`}
+                >
+                  <Repeat className="w-3.5 h-3.5" />
+                  {isLooping ? 'Auto-Loop: ON' : 'Auto-Loop: OFF'}
+                </button>
+
+                {/* Live Caching Status Pill */}
+                {captions.length > 0 && !isRendering && (
+                  <>
+                    {cacheStatus === 'caching' && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1f1f26] border border-amber-500/30 rounded-xl text-xs shadow-md shadow-black/40 animate-in fade-in duration-200">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                        <span className="text-amber-400 font-medium text-[11px]">Auto Caching...</span>
+                        <div className="w-14 h-1.5 bg-[#2b2b36] rounded-full overflow-hidden border border-[#3b3b4a]">
+                          <div 
+                            className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 transition-all duration-300 rounded-full"
+                            style={{ width: `${Math.max(8, cacheProgress)}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-amber-300 font-bold text-[11px]">{cacheProgress}%</span>
+                      </div>
+                    )}
+
+                    {cacheStatus === 'ready' && (
+                      <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-xs shadow-md shadow-black/40 animate-in fade-in duration-200">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50"></span>
+                        <span className="text-emerald-400 font-semibold text-[11px]">Pre-Render Ready</span>
+                        <span className="text-[10px] text-emerald-300 font-bold bg-emerald-900/80 border border-emerald-500/30 px-1.5 py-0.5 rounded-md">
+                          Instant ⚡
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )
         ) : (
@@ -1204,7 +1379,7 @@ export const Editor: React.FC = () => {
               <button 
                 onClick={() => {
                   if (confirmAction.type === 'reload') {
-                    window.location.hash = 'reanalyzeSubtitles=' + Date.now();
+                    loadFromTimeline(true);
                   }
                   if (confirmAction.type === 'auto') autoHighlightAll();
                   setConfirmAction({ ...confirmAction, open: false });

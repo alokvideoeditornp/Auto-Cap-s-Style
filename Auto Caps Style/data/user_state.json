@@ -1,0 +1,96 @@
+{
+  "styleConfig": {
+    "font": "Arial",
+    "fontWeight": 800,
+    "baseColor": "#ffffff",
+    "accentColor": "#FFD400",
+    "backgroundColor": "#000000",
+    "fontSize": 100,
+    "baseFontSizeMultiplier": 1,
+    "accentFontSizeMultiplier": 1.3,
+    "position": "center",
+    "textAlign": "center",
+    "animationType": "slide-up",
+    "displayMode": "word",
+    "aspectRatio": "9:16",
+    "highlightStyle": "none",
+    "colorFadeType": "in-out",
+    "glowIntensity": 10,
+    "lineLayout": "auto",
+    "wrapText": true,
+    "clipText": false,
+    "wordSpacing": 8,
+    "textBoxWidth": 96,
+    "textBoxHeight": 20,
+    "staggerSpeedMode": "auto",
+    "motionBlur": false,
+    "motionBlurIntensity": 15,
+    "enableHighlightFont": false,
+    "highlightFont": "Arial",
+    "highlightFontWeight": 800,
+    "lineSpacing": 1.1,
+    "enableDropShadow": true,
+    "dropShadowIntensity": 50,
+    "dropShadowAngle": 45,
+    "dropShadowDistance": 15,
+    "dropShadowBlur": 20,
+    "dropShadowColor": "#000000",
+    "dropShadowOnBase": true,
+    "dropShadowOnHighlight": true,
+    "dropShadowOnUnderlay": false,
+    "enableInnerShadow": false,
+    "innerShadowIntensity": 50,
+    "innerShadowAngle": 45,
+    "innerShadowDistance": 15,
+    "innerShadowBlur": 20,
+    "innerShadowColor": "#000000",
+    "innerShadowOnBase": true,
+    "innerShadowOnHighlight": true,
+    "innerShadowOnUnderlay": false,
+    "enableTextGradient": false,
+    "textGradientColors": [
+      "#8B5CF6",
+      "#F0ABFC",
+      "#8B5CF6",
+      "#F0ABFC"
+    ],
+    "gradientType": "linear",
+    "gradientDirection": "90deg",
+    "gradientColorCount": 4,
+    "gradientSpread": 100,
+    "gradientSoftness": 100,
+    "gradientRadialCenter": "center",
+    "futureStyleType": "normal",
+    "enableFutureItalic": false,
+    "highlightTextTransform": "none",
+    "focusPastAlignment": "center",
+    "focusCurrentAlignment": "center",
+    "focusFutureAlignment": "center",
+    "highlightFontSize": 83,
+    "activePreset": "Absolute Chaos"
+  },
+  "captions": [
+    {
+      "id": "1",
+      "startTime": 467,
+      "endTime": 3467,
+      "text": "Subtitle",
+      "highlightedWords": [
+        "subtitle"
+      ],
+      "highlightedIndices": [
+        0
+      ],
+      "originalHighlightedWords": [
+        "subtitle"
+      ],
+      "originalHighlightedIndices": [
+        0
+      ]
+    }
+  ],
+  "customPresets": [],
+  "customColors": [],
+  "projectName": "Auto File Organizer Pro",
+  "updatedAt": 1788324130641
+}

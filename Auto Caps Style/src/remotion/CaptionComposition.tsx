@@ -12,16 +12,36 @@ export interface CaptionCompositionProps {
 
 export const CaptionComposition: React.FC<CaptionCompositionProps> = ({ videoUrl, captions, styleConfig, isRendering }) => {
   const { fps } = useVideoConfig();
-  const [handle] = useState(() => delayRender('Loading fonts...'));
+  const [handle] = useState(() => {
+    if (isRendering) return null;
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.status === 'loaded') {
+      return null;
+    }
+    return delayRender('Loading fonts...');
+  });
 
   useEffect(() => {
-    if (typeof document !== 'undefined' && 'fonts' in document) {
-      document.fonts.ready.then(() => {
+    if (!handle) return;
+    let isFinished = false;
+    const finish = () => {
+      if (!isFinished) {
+        isFinished = true;
         continueRender(handle);
-      });
+      }
+    };
+
+    const safetyTimer = setTimeout(finish, 300);
+
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      document.fonts.ready.then(finish).catch(finish);
     } else {
-      continueRender(handle);
+      finish();
     }
+
+    return () => {
+      clearTimeout(safetyTimer);
+      finish();
+    };
   }, [handle]);
 
   // Position styles

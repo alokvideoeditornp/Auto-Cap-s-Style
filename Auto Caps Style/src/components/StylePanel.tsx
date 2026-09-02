@@ -313,10 +313,10 @@ const PRESETS: { name: string; config: Partial<StyleConfig>; preview: React.Reac
       font: 'Montserrat', baseColor: '#ffffff', accentColor: '#38bdf8', backgroundColor: '#000000', fontSize: 130, baseFontSizeMultiplier: 0.7, accentFontSizeMultiplier: 1.0, animationType: '3-line-focus', displayMode: 'word', highlightStyle: 'glow', glowIntensity: 5, lineLayout: 'single'
     },
     preview: (
-      <span style={{ fontFamily: 'Montserrat', color: '#ffffff', fontSize: '13px', fontWeight: 800, textAlign: 'center', display: 'flex', flexDirection: 'column' }}>
-        <span style={{ fontSize: '9px', opacity: 0.8 }}>नेपाली</span>
-        <span style={{ color: '#38bdf8', textShadow: '0 0 10px rgba(56,189,248,0.8)' }}>महिला तथा</span>
-        <span style={{ fontSize: '9px', opacity: 0.8 }}>पुरुष</span>
+      <span style={{ fontFamily: 'Montserrat', color: '#ffffff', fontSize: '13px', fontWeight: 800, textAlign: 'center', display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+        <span style={{ fontSize: '9px', opacity: 0.75 }}>PREVIOUS</span>
+        <span style={{ color: '#38bdf8', textShadow: '0 0 10px rgba(56,189,248,0.8)' }}>FOCUS WORD</span>
+        <span style={{ fontSize: '9px', opacity: 0.75 }}>UPCOMING</span>
       </span>
     )
   }
@@ -679,14 +679,17 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
   return (
     <div className="flex flex-col h-full min-h-0 w-full bg-[#18181c] overflow-hidden">
       {/* Locked Header (1:1 identical to Captions panel) */}
-      <div className="px-4 py-3 flex justify-between items-center flex-shrink-0 border-b border-[#2b2b34]/80 bg-[#18181c]">
-        <div className="flex flex-col">
-          <h1 className="text-white text-xs font-extrabold tracking-[0.18em] font-sans select-none uppercase flex items-center gap-1.5">
-            <span className="text-blue-500">Design &</span> Animations
-          </h1>
-          <span className="text-[10px] font-semibold text-blue-400/90 tracking-wider">
-            Alok Video Editor
-          </span>
+      <div className="px-4 py-2.5 flex justify-between items-center flex-shrink-0 border-b border-[#2b2b34]/80 bg-[#18181c]">
+        <div className="flex items-center gap-2.5">
+          <img src="/logo.png" alt="Logo" className="w-7 h-7 rounded-lg shadow-md shadow-blue-900/30 object-contain" />
+          <div className="flex flex-col">
+            <h1 className="text-white text-xs font-extrabold tracking-[0.18em] font-sans select-none uppercase flex items-center gap-1.5">
+              <span className="text-blue-500">Design &</span> Animations
+            </h1>
+            <span className="text-[10px] font-semibold text-blue-400/90 tracking-wider">
+              Alok Video Editor
+            </span>
+          </div>
         </div>
         {onClose && (
           <button onClick={onClose} className="text-gray-400 hover:text-white transition p-1 rounded-lg hover:bg-[#282830]" title="Close Panel">
@@ -1081,7 +1084,7 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
             type="range" 
             min="0.1" 
             max="2.0" 
-            step="0.1"
+            step="0.1" 
             value={styleConfig.baseFontSizeMultiplier}
             onChange={(e) => handleUpdate({ baseFontSizeMultiplier: parseFloat(e.target.value) })}
             className="w-full accent-blue-500"
@@ -1102,7 +1105,7 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
             type="range" 
             min="0.5" 
             max="4.0" 
-            step="0.1"
+            step="0.1" 
             value={styleConfig.accentFontSizeMultiplier}
             onChange={(e) => handleUpdate({ accentFontSizeMultiplier: parseFloat(e.target.value) })}
             className="w-full accent-blue-500"

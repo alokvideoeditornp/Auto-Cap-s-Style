@@ -25,7 +25,7 @@ function isNewerVersion(remote: string, local: string): boolean {
 
 export async function GET() {
   try {
-    let currentVersion = '1.0.1';
+    let currentVersion = '1.0.2';
     
     // Check all local version files
     const localCandidates = [

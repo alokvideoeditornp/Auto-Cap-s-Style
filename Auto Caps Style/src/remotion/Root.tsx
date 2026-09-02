@@ -13,19 +13,19 @@ import { loadFont as loadBungee } from "@remotion/google-fonts/Bungee";
 import { loadFont as loadComfortaa } from "@remotion/google-fonts/Comfortaa";
 import '../app/globals.css';
 
-// Pre-load all Google Fonts in Remotion before any frames are rendered to prevent Flash of Invisible Text (FOIT)
+// Pre-load essential Google Fonts weights with Latin subset to prevent FOIT and minimize network requests
 try {
-  loadMontserrat();
-  loadPoppins();
-  loadInter();
-  loadOswald();
-  loadPlayfair();
-  loadBebas();
-  loadAnton();
-  loadRighteous();
-  loadRusso();
-  loadBungee();
-  loadComfortaa();
+  loadMontserrat('normal', { weights: ['400', '600', '700', '800', '900'], subsets: ['latin'], ignoreTooManyRequestsWarning: true });
+  loadPoppins('normal', { weights: ['400', '600', '700', '800', '900'], subsets: ['latin'], ignoreTooManyRequestsWarning: true });
+  loadInter('normal', { weights: ['400', '600', '700', '800', '900'], subsets: ['latin'], ignoreTooManyRequestsWarning: true });
+  loadOswald('normal', { weights: ['400', '600', '700'], subsets: ['latin'], ignoreTooManyRequestsWarning: true });
+  loadPlayfair('normal', { weights: ['400', '700', '800', '900'], subsets: ['latin'], ignoreTooManyRequestsWarning: true });
+  loadBebas('normal', { subsets: ['latin'], ignoreTooManyRequestsWarning: true });
+  loadAnton('normal', { subsets: ['latin'], ignoreTooManyRequestsWarning: true });
+  loadRighteous('normal', { subsets: ['latin'], ignoreTooManyRequestsWarning: true });
+  loadRusso('normal', { subsets: ['latin'], ignoreTooManyRequestsWarning: true });
+  loadBungee('normal', { subsets: ['latin'], ignoreTooManyRequestsWarning: true });
+  loadComfortaa('normal', { weights: ['400', '700'], subsets: ['latin'], ignoreTooManyRequestsWarning: true });
 } catch (e) {
   console.log('Font load error', e);
 }

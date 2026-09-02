@@ -47,5 +47,11 @@ next-env.d.ts
 /public/auto.json
 /public/videos/
 /temp/
+/.render-cache/
+/.remotion-bundle/
+*.mov
+*.mp4
+*.srt
+*.vtt
 
 build
