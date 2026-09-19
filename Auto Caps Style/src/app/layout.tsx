@@ -49,7 +49,7 @@ export default function RootLayout({
               gtag('config', '${GA_MEASUREMENT_ID}', {
                 page_path: window.location.pathname,
                 send_page_view: true,
-                app_version: '1.0.2'
+                app_version: '1.0.3'
               });
             `,
           }}

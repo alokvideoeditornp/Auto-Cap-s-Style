@@ -12,7 +12,7 @@
     "textAlign": "center",
     "animationType": "slide-up",
     "displayMode": "word",
-    "aspectRatio": "9:16",
+    "aspectRatio": "16:9",
     "highlightStyle": "none",
     "colorFadeType": "in-out",
     "glowIntensity": 10,
@@ -66,31 +66,300 @@
     "focusPastAlignment": "center",
     "focusCurrentAlignment": "center",
     "focusFutureAlignment": "center",
-    "highlightFontSize": 83,
-    "activePreset": "Absolute Chaos"
+    "highlightFontSize": 83
   },
   "captions": [
     {
       "id": "1",
-      "startTime": 467,
-      "endTime": 3467,
-      "text": "Subtitle",
+      "startTime": 333,
+      "endTime": 2733,
+      "text": "After a client hands me a video project,",
       "highlightedWords": [
-        "subtitle"
+        "project"
+      ],
+      "highlightedIndices": [
+        7
+      ],
+      "originalHighlightedWords": [
+        "project"
+      ],
+      "originalHighlightedIndices": [
+        7
+      ]
+    },
+    {
+      "id": "2",
+      "startTime": 3133,
+      "endTime": 4667,
+      "text": "I always start by",
+      "highlightedWords": [
+        "always"
+      ],
+      "highlightedIndices": [
+        1
+      ],
+      "originalHighlightedWords": [
+        "always"
+      ],
+      "originalHighlightedIndices": [
+        1
+      ]
+    },
+    {
+      "id": "3",
+      "startTime": 4667,
+      "endTime": 6633,
+      "text": "creating files in media pool.",
+      "highlightedWords": [
+        "creating"
       ],
       "highlightedIndices": [
         0
       ],
       "originalHighlightedWords": [
-        "subtitle"
+        "creating"
       ],
       "originalHighlightedIndices": [
         0
+      ]
+    },
+    {
+      "id": "4",
+      "startTime": 7567,
+      "endTime": 9067,
+      "text": "But sometime,",
+      "highlightedWords": [
+        "sometime"
+      ],
+      "highlightedIndices": [
+        1
+      ],
+      "originalHighlightedWords": [
+        "sometime"
+      ],
+      "originalHighlightedIndices": [
+        1
+      ]
+    },
+    {
+      "id": "5",
+      "startTime": 9733,
+      "endTime": 11367,
+      "text": "I got lazy.",
+      "highlightedWords": [
+        "lazy"
+      ],
+      "highlightedIndices": [
+        2
+      ],
+      "originalHighlightedWords": [
+        "lazy"
+      ],
+      "originalHighlightedIndices": [
+        2
+      ]
+    },
+    {
+      "id": "6",
+      "startTime": 11367,
+      "endTime": 12167,
+      "text": "I skip",
+      "highlightedWords": [
+        "skip"
+      ],
+      "highlightedIndices": [
+        1
+      ],
+      "originalHighlightedWords": [
+        "skip"
+      ],
+      "originalHighlightedIndices": [
+        1
+      ]
+    },
+    {
+      "id": "7",
+      "startTime": 12433,
+      "endTime": 13633,
+      "text": "organizing folders",
+      "highlightedWords": [
+        "organizing"
+      ],
+      "highlightedIndices": [
+        0
+      ],
+      "originalHighlightedWords": [
+        "organizing"
+      ],
+      "originalHighlightedIndices": [
+        0
+      ]
+    },
+    {
+      "id": "8",
+      "startTime": 13633,
+      "endTime": 16367,
+      "text": "perfectly and after a while,",
+      "highlightedWords": [
+        "perfectly"
+      ],
+      "highlightedIndices": [
+        0
+      ],
+      "originalHighlightedWords": [
+        "perfectly"
+      ],
+      "originalHighlightedIndices": [
+        0
+      ]
+    },
+    {
+      "id": "9",
+      "startTime": 16800,
+      "endTime": 19167,
+      "text": "everything throws into a messy.",
+      "highlightedWords": [
+        "everything"
+      ],
+      "highlightedIndices": [
+        0
+      ],
+      "originalHighlightedWords": [
+        "everything"
+      ],
+      "originalHighlightedIndices": [
+        0
+      ]
+    },
+    {
+      "id": "10",
+      "startTime": 20267,
+      "endTime": 21900,
+      "text": "Timelines, compound clips,",
+      "highlightedWords": [
+        "timelines"
+      ],
+      "highlightedIndices": [
+        0
+      ],
+      "originalHighlightedWords": [
+        "timelines"
+      ],
+      "originalHighlightedIndices": [
+        0
+      ]
+    },
+    {
+      "id": "11",
+      "startTime": 22033,
+      "endTime": 25800,
+      "text": "music, SFX, all mixed together.",
+      "highlightedWords": [
+        "together"
+      ],
+      "highlightedIndices": [
+        4
+      ],
+      "originalHighlightedWords": [
+        "together"
+      ],
+      "originalHighlightedIndices": [
+        4
+      ]
+    },
+    {
+      "id": "12",
+      "startTime": 26333,
+      "endTime": 27333,
+      "text": "That's the idea",
+      "highlightedWords": [
+        "thats"
+      ],
+      "highlightedIndices": [
+        0
+      ],
+      "originalHighlightedWords": [
+        "thats"
+      ],
+      "originalHighlightedIndices": [
+        0
+      ]
+    },
+    {
+      "id": "13",
+      "startTime": 27333,
+      "endTime": 30100,
+      "text": "behind Auto-file Organizer Pro.",
+      "highlightedWords": [
+        "autofile"
+      ],
+      "highlightedIndices": [
+        1
+      ],
+      "originalHighlightedWords": [
+        "autofile"
+      ],
+      "originalHighlightedIndices": [
+        1
+      ]
+    },
+    {
+      "id": "14",
+      "startTime": 30100,
+      "endTime": 32700,
+      "text": "One plugin does it all.",
+      "highlightedWords": [
+        "all"
+      ],
+      "highlightedIndices": [
+        4
+      ],
+      "originalHighlightedWords": [
+        "all"
+      ],
+      "originalHighlightedIndices": [
+        4
+      ]
+    },
+    {
+      "id": "15",
+      "startTime": 32900,
+      "endTime": 34633,
+      "text": "Smart media management,",
+      "highlightedWords": [
+        "management"
+      ],
+      "highlightedIndices": [
+        2
+      ],
+      "originalHighlightedWords": [
+        "management"
+      ],
+      "originalHighlightedIndices": [
+        2
+      ]
+    },
+    {
+      "id": "16",
+      "startTime": 35367,
+      "endTime": 36733,
+      "text": "full automatic.",
+      "highlightedWords": [
+        "automatic"
+      ],
+      "highlightedIndices": [
+        1
+      ],
+      "originalHighlightedWords": [
+        "automatic"
+      ],
+      "originalHighlightedIndices": [
+        1
       ]
     }
   ],
   "customPresets": [],
   "customColors": [],
   "projectName": null,
-  "updatedAt": 1789390104900
+  "updatedAt": 1789803576475
 }

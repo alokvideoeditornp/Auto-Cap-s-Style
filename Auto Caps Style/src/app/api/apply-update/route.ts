@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     const targetDir = process.cwd();
 
     // 4. Read latest version from extracted version.json or package.json
-    let newVersion = '1.0.2';
+    let newVersion = '1.0.3';
     try {
       const extractedVerFile = path.join(sourceDir, 'version.json');
       const extractedPkgFile = path.join(sourceDir, 'package.json');

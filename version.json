@@ -1,5 +1,5 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "downloadUrl": "https://github.com/alokvideoeditornp/Auto-Cap-s-Style/archive/refs/heads/main.zip",
-  "changelog": "Added ACS taskbar logo, fast multi-preset auto-caching, and timeline sync improvements!"
+  "changelog": "Fixed npm install peer dependency installer issue, added cross-platform Mac/Win launcher improvements, and updated Typography Color styling."
 }

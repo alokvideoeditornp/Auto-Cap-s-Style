@@ -908,11 +908,11 @@ export const StylePanel = ({ onClose }: { onClose?: () => void }) => {
       </AccordionItem>
 
       <AccordionItem 
-        title="Typography & Colors" 
+        title="Typography Color" 
         icon={<Type className="w-4 h-4" />} 
         badge={styleConfig.font}
-        isOpen={openPanels.includes("Typography & Colors")} 
-        onToggle={() => togglePanel("Typography & Colors")}
+        isOpen={openPanels.includes("Typography Color")} 
+        onToggle={() => togglePanel("Typography Color")}
       >
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
