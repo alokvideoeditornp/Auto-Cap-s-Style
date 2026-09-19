@@ -1,64 +1,7 @@
 1
-00:00:00,133 --> 00:00:02,733
-After a client hands me a video project,
+00:00:01,000 --> 00:00:03,500
+Auto Cap's Style
 
 2
-00:00:03,133 --> 00:00:04,667
-I always start by
-
-3
-00:00:04,667 --> 00:00:06,633
-creating files in media pool.
-
-4
-00:00:07,567 --> 00:00:09,067
-But sometime,
-
-5
-00:00:09,733 --> 00:00:11,367
-I got lazy.
-
-6
-00:00:11,367 --> 00:00:12,167
-I skip
-
-7
-00:00:12,433 --> 00:00:13,633
-organizing folders
-
-8
-00:00:13,633 --> 00:00:16,367
-perfectly and after a while,
-
-9
-00:00:16,800 --> 00:00:19,167
-everything throws into a messy.
-
-10
-00:00:20,267 --> 00:00:21,900
-Timelines, compound clips,
-
-11
-00:00:22,033 --> 00:00:25,800
-music, SFX, all mixed together.
-
-12
-00:00:26,333 --> 00:00:27,333
-That's the idea
-
-13
-00:00:27,333 --> 00:00:30,100
-behind Auto-file Organizer Pro. 
-
-14
-00:00:30,100 --> 00:00:32,700
-One plugin does it all.
-
-15
-00:00:32,900 --> 00:00:34,633
-Smart media management,
-
-16
-00:00:35,367 --> 00:00:36,733
-full automatic.
-
+00:00:03,600 --> 00:00:06,000
+Create Animated Captions Easily
